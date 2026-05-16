@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from ai_agent.core.models.llm import FinishReason, LLMResponse, LLMUsage
 from ai_agent.core.models.message import Message, Role
-from ai_agent.core.models.state import AgentState, AgentStatus, StepResult
+from ai_agent.core.models.agent import AgentState, AgentStatus, StepResult
 from ai_agent.core.models.tool import ToolCall
 
 

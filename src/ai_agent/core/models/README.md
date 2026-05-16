@@ -19,5 +19,5 @@ Shared Pydantic data models used across all layers. All models are frozen (immut
 - `llm.py` — LLM request/response types: `FinishReason`, `LLM`, `LLMUsage`, `LLMSettings`, `LLMRequest`, `LLMResponse`.
 - `message.py` — conversation message types: `Role`, `Message`.
 - `run.py` — run-level types: `RunSettings`, `RunResult`.
-- `state.py` — execution state types: `AgentStatus`, `AgentState`, `StepResult`.
+- `agent.py` — execution state types: `AgentStatus`, `AgentState`, `StepResult`.
 - `tool.py` — tool invocation types: `Tool`, `ToolConfig`, `ToolSchema`, `ToolDefinition`, `ToolContext`, `ToolCall`, `ToolResponse`, `ToolResult`.

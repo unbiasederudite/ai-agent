@@ -3,7 +3,7 @@
 from typing import Protocol, runtime_checkable
 
 from ai_agent.core.models.llm import LLMRequest
-from ai_agent.core.models.state import AgentState, StepResult
+from ai_agent.core.models.agent import AgentState, StepResult
 from ai_agent.core.models.strategy import StrategyConfig
 from ai_agent.core.protocols.llm import ILLMProvider
 

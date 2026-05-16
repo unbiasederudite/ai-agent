@@ -2,7 +2,7 @@
 
 from ai_agent.core.models.llm import FinishReason, LLMRequest, LLMResponse, LLMSettings, LLMUsage
 from ai_agent.core.models.message import Message, Role
-from ai_agent.core.models.state import AgentState, AgentStatus, StepResult
+from ai_agent.core.models.agent import AgentState, AgentStatus, StepResult
 from ai_agent.core.models.strategy import StrategyConfig
 from ai_agent.core.protocols import ILLMProvider, IReasoningStrategy
 
