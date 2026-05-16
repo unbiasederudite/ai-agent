@@ -1,0 +1,36 @@
+[project]
+name = "ai-agent"
+version = "0.1.0"
+description = "Modular AI agent platform — pure Python core with plug-in framework adapters."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.0",
+    "typer>=0.12",
+]
+
+[project.scripts]
+ai-agent = "ai_agent.cli:app"
+
+[build-system]
+requires = ["uv_build>=0.10.7,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+strict = true
+exclude = ["tests/"]
+
+[tool.ruff]
+line-length = 100
+
+[dependency-groups]
+dev = [
+    "mypy>=1.10",
+    "pre-commit>=3.0",
+    "pytest>=8.0",
+    "pytest-mock>=3.0",
+    "ruff>=0.4",
+]
