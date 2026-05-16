@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from ai_agent.core.models.llm import LLMUsage
+from ai_agent.core.models.llm import FinishReason, LLMResponse, LLMUsage
 from ai_agent.core.models.message import Message, Role
 from ai_agent.core.models.state import AgentState, AgentStatus, StepResult
 from ai_agent.core.models.tool import ToolCall
@@ -112,17 +112,25 @@ class TestStepResult:
     def _make_usage(self) -> LLMUsage:
         return LLMUsage(input_tokens=10, output_tokens=5)
 
-    def test_constructs_with_state_and_usage(self) -> None:
+    def _make_response(self, content: str = "ok") -> LLMResponse:
+        return LLMResponse(
+            message=Message(role=Role.ASSISTANT, content=content),
+            finish_reason=FinishReason.STOP,
+            usage=self._make_usage(),
+        )
+
+    def test_constructs_with_required_fields(self) -> None:
         state = AgentState()
-        result = StepResult(state=state, usage=self._make_usage())
+        result = StepResult(state=state, response=self._make_response())
         assert result.state is state
-        assert result.usage.input_tokens == 10
+        assert result.response.usage.input_tokens == 10
+        assert result.response.finish_reason == FinishReason.STOP
 
     def test_is_frozen(self) -> None:
-        result = StepResult(state=AgentState(), usage=self._make_usage())
+        result = StepResult(state=AgentState(), response=self._make_response())
         with pytest.raises(Exception):
             result.state = AgentState()  # type: ignore[misc]
 
-    def test_state_and_usage_are_required(self) -> None:
+    def test_all_fields_are_required(self) -> None:
         with pytest.raises(Exception):
             StepResult()  # type: ignore[call-arg]

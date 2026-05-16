@@ -6,7 +6,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ai_agent.core.models.llm import LLMUsage
+from ai_agent.core.models.llm import LLMResponse
 from ai_agent.core.models.message import Message
 
 
@@ -45,4 +45,4 @@ class StepResult(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     state: AgentState = Field(description="New state after this step.")
-    usage: LLMUsage = Field(description="Token counts for this step.")
+    response: LLMResponse = Field(description="The LLM response that produced this step.")
