@@ -37,6 +37,10 @@ class ToolExecutionError(ToolError):
     """Raised when a tool raises an exception during invocation."""
 
 
+class AgentNotFoundError(AgentError):
+    """Raised when a requested agent is not present in the registry."""
+
+
 class ProviderError(AgentError):
     """Base class for external provider failures."""
 
@@ -63,6 +67,7 @@ class StateError(AgentError):
 
 __all__ = [
     "AgentError",
+    "AgentNotFoundError",
     "AuthenticationError",
     "CompletionError",
     "ConfigError",

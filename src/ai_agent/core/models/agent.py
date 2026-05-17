@@ -1,4 +1,4 @@
-"""Agent execution state types."""
+"""Agent identity and execution state types."""
 
 from __future__ import annotations
 
@@ -8,6 +8,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ai_agent.core.models.llm import LLMResponse
 from ai_agent.core.models.message import Message
+
+
+class Agent(BaseModel):
+    """Agent identity."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str = Field(description="Unique agent name used as the registry key.")
 
 
 class AgentStatus(StrEnum):

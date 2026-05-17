@@ -1,12 +1,33 @@
-"""Unit tests for AgentStatus enum and AgentState model and transitions."""
+"""Unit tests for Agent identity, AgentStatus enum, AgentState model, and StepResult."""
 
 import pytest
 from pydantic import ValidationError
 
+from ai_agent.core.models.agent import Agent, AgentState, AgentStatus, StepResult
 from ai_agent.core.models.llm import FinishReason, LLMResponse, LLMUsage
 from ai_agent.core.models.message import Message, Role
-from ai_agent.core.models.agent import AgentState, AgentStatus, StepResult
 from ai_agent.core.models.tool import ToolCall
+
+
+class TestAgent:
+    """Tests for the Agent identity model."""
+
+    def test_constructs_with_name(self) -> None:
+        agent = Agent(name="coder")
+        assert agent.name == "coder"
+
+    def test_is_frozen(self) -> None:
+        agent = Agent(name="coder")
+        with pytest.raises(Exception):
+            agent.name = "other"  # type: ignore[misc]
+
+    def test_requires_name(self) -> None:
+        with pytest.raises((ValidationError, TypeError)):
+            Agent()  # type: ignore[call-arg]
+
+    def test_equality_by_name(self) -> None:
+        assert Agent(name="coder") == Agent(name="coder")
+        assert Agent(name="coder") != Agent(name="reviewer")
 
 
 class TestAgentStatus:

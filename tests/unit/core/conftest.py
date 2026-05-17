@@ -4,7 +4,7 @@ import pytest
 
 from ai_agent.core.models.config import (
     AgentConfig,
-    AgentRegistry,
+    AgentRegistryConfig,
     ConversationConfig,
     LLMConfig,
     LLMProviderConfig,
@@ -23,7 +23,12 @@ def llm_config() -> LLM:
 @pytest.fixture()
 def agent_config(llm_config: LLM) -> AgentConfig:
     """Minimal AgentConfig for tests."""
-    return AgentConfig(llm=llm_config, strategy=StrategyConfig(type="default"))
+    return AgentConfig(
+        name="default",
+        llm=llm_config,
+        strategy=StrategyConfig(type="default"),
+        system_prompt="You are a helpful assistant.",
+    )
 
 
 @pytest.fixture()
@@ -43,5 +48,5 @@ def conversation_config(llm_config: LLM, agent_config: AgentConfig) -> Conversat
                 )
             ]
         ),
-        agent_registry=AgentRegistry(agents=[agent_config]),
+        agent_registry=AgentRegistryConfig(agents=[agent_config]),
     )

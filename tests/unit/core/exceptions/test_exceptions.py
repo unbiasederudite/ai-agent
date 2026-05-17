@@ -4,11 +4,14 @@ import pytest
 
 from ai_agent.core.exceptions import (
     AgentError,
+    AgentNotFoundError,
     AuthenticationError,
     CompletionError,
     ConfigError,
+    ContextBudgetError,
     LoopDetectedError,
     ProviderError,
+    ProviderNotFoundError,
     RateLimitError,
     ReasoningError,
     StateError,
@@ -55,8 +58,17 @@ class TestAgentErrorHierarchy:
     def test_tool_execution_error_is_tool_error(self) -> None:
         assert issubclass(ToolExecutionError, ToolError)
 
+    def test_context_budget_error_is_reasoning_error(self) -> None:
+        assert issubclass(ContextBudgetError, ReasoningError)
+
+    def test_agent_not_found_error_is_agent_error(self) -> None:
+        assert issubclass(AgentNotFoundError, AgentError)
+
     def test_provider_error_is_agent_error(self) -> None:
         assert issubclass(ProviderError, AgentError)
+
+    def test_provider_not_found_error_is_provider_error(self) -> None:
+        assert issubclass(ProviderNotFoundError, ProviderError)
 
     def test_completion_error_is_provider_error(self) -> None:
         assert issubclass(CompletionError, ProviderError)

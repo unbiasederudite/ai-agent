@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from ai_agent.core.models.agent import Agent
 from ai_agent.core.models.llm import LLM, LLMSettings
 from ai_agent.core.models.strategy import StrategyConfig
 from ai_agent.core.models.tool import Tool, ToolConfig
@@ -77,26 +78,23 @@ class LoggingConfig(BaseModel):
     )
 
 
-class AgentConfig(BaseModel):
+class AgentConfig(Agent):
     """Per-agent configuration."""
-
-    model_config = ConfigDict(frozen=True)
 
     llm: LLM = Field(description="Default LLM identity for this agent.")
     tools: list[Tool] = Field(
         default_factory=list,
         description="Default tools for this agent.",
     )
-    system_prompt: str | None = Field(
-        default=None,
-        description="Optional system prompt overlay.",
+    system_prompt: str = Field(
+        description="System prompt for this agent.",
     )
     strategy: StrategyConfig = Field(
         description="Reasoning strategy configuration.",
     )
 
 
-class AgentRegistry(BaseModel):
+class AgentRegistryConfig(BaseModel):
     """Registry of agent configurations."""
 
     model_config = ConfigDict(frozen=True)
@@ -115,7 +113,7 @@ class ConversationConfig(BaseModel):
     llm_registry: LLMRegistryConfig = Field(
         description="Registry of available LLM providers.",
     )
-    agent_registry: AgentRegistry = Field(
+    agent_registry: AgentRegistryConfig = Field(
         description="Registry of agent configurations.",
     )
     tool_registry: ToolRegistryConfig | None = Field(

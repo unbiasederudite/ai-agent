@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from ai_agent.core.models.config import (
     AgentConfig,
-    AgentRegistry,
+    AgentRegistryConfig,
     CompactionConfig,
     ConversationConfig,
     LLMConfig,
@@ -150,22 +150,25 @@ class TestAgentConfig:
 
     def _make(self, **overrides: object) -> AgentConfig:
         defaults: dict[str, object] = {
+            "name": "default",
             "llm": LLM(provider="test", model="test-model"),
             "strategy": StrategyConfig(type="default"),
+            "system_prompt": "You are a helpful assistant.",
         }
         return AgentConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
 
     def test_agent_config_constructs_with_required_fields(self) -> None:
         cfg = self._make()
+        assert cfg.name == "default"
         assert cfg.llm.provider == "test"
         assert cfg.llm.model == "test-model"
         assert cfg.strategy is not None
-        assert cfg.system_prompt is None
+        assert cfg.system_prompt == "You are a helpful assistant."
         assert cfg.tools == []
 
     def test_agent_config_requires_llm(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            AgentConfig(strategy=StrategyConfig(type="default"))  # type: ignore[call-arg]
+            AgentConfig(name="x", strategy=StrategyConfig(type="default"), system_prompt="x")  # type: ignore[call-arg]
 
     def test_agent_config_is_frozen(self) -> None:
         cfg = self._make()
@@ -177,9 +180,13 @@ class TestAgentConfig:
         assert isinstance(cfg.strategy, StrategyConfig)
         assert cfg.strategy.max_turns == 5
 
-    def test_agent_config_system_prompt_defaults_to_none(self) -> None:
-        cfg = self._make()
-        assert cfg.system_prompt is None
+    def test_agent_config_requires_system_prompt(self) -> None:
+        with pytest.raises((ValidationError, TypeError)):
+            AgentConfig(
+                name="x",
+                llm=LLM(provider="test", model="m"),
+                strategy=StrategyConfig(type="default"),
+            )  # type: ignore[call-arg]
 
     def test_agent_config_system_prompt_can_be_set(self) -> None:
         cfg = self._make(system_prompt="You are a pirate.")
@@ -224,11 +231,14 @@ class TestConversationConfig:
 
     def _make(self, **overrides: object) -> ConversationConfig:
         agent = AgentConfig(
-            llm=LLM(provider="test", model="test-model"), strategy=StrategyConfig(type="default")
+            name="default",
+            llm=LLM(provider="test", model="test-model"),
+            strategy=StrategyConfig(type="default"),
+            system_prompt="You are a helpful assistant.",
         )
         defaults: dict[str, object] = {
             "llm_registry": LLMRegistryConfig(registry=[self._make_provider_cfg()]),
-            "agent_registry": AgentRegistry(agents=[agent]),
+            "agent_registry": AgentRegistryConfig(agents=[agent]),
         }
         return ConversationConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
 
@@ -243,10 +253,12 @@ class TestConversationConfig:
     def test_conversation_config_requires_llm_registry(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
             agent = AgentConfig(
+                name="x",
                 llm=LLM(provider="test", model="test-model"),
                 strategy=StrategyConfig(type="default"),
+                system_prompt="x",
             )
-            ConversationConfig(agent_registry=AgentRegistry(agents=[agent]))  # type: ignore[call-arg]
+            ConversationConfig(agent_registry=AgentRegistryConfig(agents=[agent]))  # type: ignore[call-arg]
 
     def test_conversation_config_requires_agent_registry(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
@@ -284,11 +296,17 @@ class TestConversationConfig:
     def test_conversation_config_agent_registry_preserved(self) -> None:
         agents = [
             AgentConfig(
-                llm=LLM(provider="test", model="a"), strategy=StrategyConfig(type="default")
+                name="agent-a",
+                llm=LLM(provider="test", model="a"),
+                strategy=StrategyConfig(type="default"),
+                system_prompt="System A.",
             ),
             AgentConfig(
-                llm=LLM(provider="test", model="b"), strategy=StrategyConfig(type="default")
+                name="agent-b",
+                llm=LLM(provider="test", model="b"),
+                strategy=StrategyConfig(type="default"),
+                system_prompt="System B.",
             ),
         ]
-        cfg = self._make(agent_registry=AgentRegistry(agents=agents))
+        cfg = self._make(agent_registry=AgentRegistryConfig(agents=agents))
         assert len(cfg.agent_registry.agents) == 2
