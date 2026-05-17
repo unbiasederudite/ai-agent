@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ai_agent.core.exceptions import ToolNotFoundError
-from ai_agent.core.models.tool import Tool, ToolSchema
+from ai_agent.core.models.tool import Tool, ToolDefinition, ToolSchema
 from ai_agent.core.protocols.tool import ITool
 
 
@@ -41,8 +41,8 @@ class ToolRegistry:
                 f"No implementation for tool type {type!r}. Registered: {sorted(self._callers)}"
             ) from None
 
-    def resolve_schema(self, tool: Tool) -> ToolSchema:
-        """Return the schema registered for the given Tool identity.
+    def resolve_definition(self, tool: Tool) -> ToolDefinition:
+        """Return a ToolDefinition for the given Tool identity.
 
         Args:
             tool: Tool identifier.
@@ -51,11 +51,12 @@ class ToolRegistry:
             ToolNotFoundError: If the tool is not registered.
         """
         try:
-            return self._schemas[tool]
+            schema = self._schemas[tool]
         except KeyError:
             raise ToolNotFoundError(
                 f"No schema for tool type={tool.type!r} name={tool.name!r}."
             ) from None
+        return ToolDefinition(name=tool.name, tool_schema=schema)
 
     def resolve_tools(self, type: str) -> list[str]:
         """Return all tool names registered under the given tool type.

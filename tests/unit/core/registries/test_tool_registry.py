@@ -101,23 +101,28 @@ class TestToolRegistryResolveImplementation:
         assert registry.resolve_implementation("test") is impl
 
 
-class TestToolRegistryResolveSchema:
-    def test_returns_registered_schema(self) -> None:
+class TestToolRegistryResolveDefinition:
+    def test_returns_definition_with_correct_name(self) -> None:
         registry = ToolRegistry()
         registry.register(_CALC, _CALC_SCHEMA, _CalcImpl())
-        assert registry.resolve_schema(_CALC) is _CALC_SCHEMA
+        assert registry.resolve_definition(_CALC).name == "calculator"
+
+    def test_returns_definition_with_correct_schema(self) -> None:
+        registry = ToolRegistry()
+        registry.register(_CALC, _CALC_SCHEMA, _CalcImpl())
+        assert registry.resolve_definition(_CALC).tool_schema is _CALC_SCHEMA
 
     def test_unknown_tool_raises_tool_not_found(self) -> None:
         registry = ToolRegistry()
         with pytest.raises(ToolNotFoundError):
-            registry.resolve_schema(_CALC)
+            registry.resolve_definition(_CALC)
 
-    def test_distinct_schema_per_tool(self) -> None:
+    def test_distinct_definition_per_tool(self) -> None:
         registry = ToolRegistry()
         registry.register(_CALC, _CALC_SCHEMA, _CalcImpl())
         registry.register(_SEARCH, _SEARCH_SCHEMA, _SearchImpl())
-        assert registry.resolve_schema(_CALC) is _CALC_SCHEMA
-        assert registry.resolve_schema(_SEARCH) is _SEARCH_SCHEMA
+        assert registry.resolve_definition(_CALC).tool_schema is _CALC_SCHEMA
+        assert registry.resolve_definition(_SEARCH).tool_schema is _SEARCH_SCHEMA
 
 
 class TestToolRegistryResolveTools:
