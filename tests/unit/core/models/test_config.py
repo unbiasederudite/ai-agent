@@ -3,8 +3,8 @@
 import pytest
 from pydantic import ValidationError
 
+from ai_agent.core.models.agent import Agent, AgentConfig
 from ai_agent.core.models.config import (
-    AgentConfig,
     AgentRegistryConfig,
     CompactionConfig,
     ConversationConfig,
@@ -16,7 +16,7 @@ from ai_agent.core.models.config import (
 )
 from ai_agent.core.models.llm import LLM, LLMSettings
 from ai_agent.core.models.strategy import StrategyConfig
-from ai_agent.core.models.tool import Tool, ToolConfig
+from ai_agent.core.models.tool import ToolConfig
 
 
 class TestLLMConfig:
@@ -146,74 +146,34 @@ class TestLoggingConfig:
 
 
 class TestAgentConfig:
-    """Tests for the per-agent AgentConfig model."""
+    """Tests for the AgentConfig base model."""
 
-    def _make(self, **overrides: object) -> AgentConfig:
-        defaults: dict[str, object] = {
-            "name": "default",
-            "llm": LLM(provider="test", model="test-model"),
-            "strategy": StrategyConfig(type="default"),
-            "system_prompt": "You are a helpful assistant.",
-        }
-        return AgentConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
-
-    def test_agent_config_constructs_with_required_fields(self) -> None:
-        cfg = self._make()
+    def test_agent_config_constructs_with_type_and_name(self) -> None:
+        cfg = AgentConfig(type="node", name="default")
+        assert cfg.type == "node"
         assert cfg.name == "default"
-        assert cfg.llm.provider == "test"
-        assert cfg.llm.model == "test-model"
-        assert cfg.strategy is not None
-        assert cfg.system_prompt == "You are a helpful assistant."
-        assert cfg.tools == []
 
-    def test_agent_config_requires_llm(self) -> None:
+    def test_agent_config_requires_type(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            AgentConfig(name="x", strategy=StrategyConfig(type="default"), system_prompt="x")  # type: ignore[call-arg]
+            AgentConfig(name="x")  # type: ignore[call-arg]
+
+    def test_agent_config_requires_name(self) -> None:
+        with pytest.raises((ValidationError, TypeError)):
+            AgentConfig(type="node")  # type: ignore[call-arg]
 
     def test_agent_config_is_frozen(self) -> None:
-        cfg = self._make()
+        cfg = AgentConfig(type="node", name="default")
         with pytest.raises(Exception):
-            cfg.strategy = StrategyConfig(type="other")  # type: ignore[misc]
+            cfg.name = "other"  # type: ignore[misc]
 
-    def test_agent_config_strategy_accepts_explicit_values(self) -> None:
-        cfg = self._make(strategy=StrategyConfig(type="default", max_turns=5))
-        assert isinstance(cfg.strategy, StrategyConfig)
-        assert cfg.strategy.max_turns == 5
+    def test_agent_config_has_no_llm_field(self) -> None:
+        assert "llm" not in AgentConfig.model_fields
 
-    def test_agent_config_requires_system_prompt(self) -> None:
-        with pytest.raises((ValidationError, TypeError)):
-            AgentConfig(
-                name="x",
-                llm=LLM(provider="test", model="m"),
-                strategy=StrategyConfig(type="default"),
-            )  # type: ignore[call-arg]
+    def test_agent_config_has_no_system_prompt_field(self) -> None:
+        assert "system_prompt" not in AgentConfig.model_fields
 
-    def test_agent_config_system_prompt_can_be_set(self) -> None:
-        cfg = self._make(system_prompt="You are a pirate.")
-        assert cfg.system_prompt == "You are a pirate."
-
-    def test_agent_config_has_no_llm_registry_field(self) -> None:
-        cfg = self._make()
-        assert not hasattr(cfg, "llm_registry")
-
-    def test_agent_config_has_no_tool_registry_field(self) -> None:
-        cfg = self._make()
-        assert not hasattr(cfg, "tool_registry")
-
-    def test_agent_config_tools_defaults_empty(self) -> None:
-        cfg = self._make()
-        assert cfg.tools == []
-
-    def test_agent_config_tools_can_be_set(self) -> None:
-        tools = [Tool(type="mcp", name="search"), Tool(type="mcp", name="calc")]
-        cfg = self._make(tools=tools)
-        assert len(cfg.tools) == 2
-        assert cfg.tools[0].name == "search"
-
-    def test_agent_config_tools_field_contains_tool_instances(self) -> None:
-        tools = [Tool(type="mcp", name="search")]
-        cfg = self._make(tools=tools)
-        assert all(isinstance(t, Tool) for t in cfg.tools)
+    def test_agent_config_has_no_strategy_field(self) -> None:
+        assert "strategy" not in AgentConfig.model_fields
 
 
 class TestConversationConfig:
@@ -230,15 +190,13 @@ class TestConversationConfig:
         )
 
     def _make(self, **overrides: object) -> ConversationConfig:
-        agent = AgentConfig(
-            name="default",
-            llm=LLM(provider="test", model="test-model"),
-            strategy=StrategyConfig(type="default"),
-            system_prompt="You are a helpful assistant.",
-        )
         defaults: dict[str, object] = {
             "llm_registry": LLMRegistryConfig(registry=[self._make_provider_cfg()]),
-            "agent_registry": AgentRegistryConfig(agents=[agent]),
+            "agent_registry": AgentRegistryConfig(
+                agents=[AgentConfig(type="node", name="default")]
+            ),
+            "default_agent": Agent(type="node", name="default"),
+            "utility_llm": LLM(provider="test", model="test-model"),
         }
         return ConversationConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
 
@@ -252,13 +210,9 @@ class TestConversationConfig:
 
     def test_conversation_config_requires_llm_registry(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            agent = AgentConfig(
-                name="x",
-                llm=LLM(provider="test", model="test-model"),
-                strategy=StrategyConfig(type="default"),
-                system_prompt="x",
-            )
-            ConversationConfig(agent_registry=AgentRegistryConfig(agents=[agent]))  # type: ignore[call-arg]
+            ConversationConfig(
+                agent_registry=AgentRegistryConfig(agents=[AgentConfig(type="node", name="x")])
+            )  # type: ignore[call-arg]
 
     def test_conversation_config_requires_agent_registry(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
@@ -289,24 +243,37 @@ class TestConversationConfig:
                 LLMConfig(model="b", settings=LLMSettings(temperature=0.5, max_tokens=2048)),
             ],
         )
-        cfg = self._make(llm_registry=LLMRegistryConfig(registry=[provider_cfg]))
+        cfg = self._make(
+            llm_registry=LLMRegistryConfig(registry=[provider_cfg]),
+            utility_llm=LLM(provider="test", model="a"),
+        )
         assert len(cfg.llm_registry.registry) == 1
         assert len(cfg.llm_registry.registry[0].models) == 2
 
     def test_conversation_config_agent_registry_preserved(self) -> None:
         agents = [
-            AgentConfig(
-                name="agent-a",
-                llm=LLM(provider="test", model="a"),
-                strategy=StrategyConfig(type="default"),
-                system_prompt="System A.",
-            ),
-            AgentConfig(
-                name="agent-b",
-                llm=LLM(provider="test", model="b"),
-                strategy=StrategyConfig(type="default"),
-                system_prompt="System B.",
-            ),
+            AgentConfig(type="node", name="agent-a"),
+            AgentConfig(type="node", name="agent-b"),
         ]
-        cfg = self._make(agent_registry=AgentRegistryConfig(agents=agents))
+        cfg = self._make(
+            agent_registry=AgentRegistryConfig(agents=agents),
+            default_agent=Agent(type="node", name="agent-a"),
+        )
         assert len(cfg.agent_registry.agents) == 2
+
+    def test_default_agent_preserved(self) -> None:
+        cfg = self._make()
+        assert cfg.default_agent.name == "default"
+
+    def test_utility_llm_preserved(self) -> None:
+        cfg = self._make()
+        assert cfg.utility_llm.provider == "test"
+        assert cfg.utility_llm.model == "test-model"
+
+    def test_default_agent_not_in_registry_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            self._make(default_agent=Agent(type="node", name="nonexistent"))
+
+    def test_utility_llm_not_in_registry_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            self._make(utility_llm=LLM(provider="other", model="other-model"))

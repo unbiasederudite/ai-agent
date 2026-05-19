@@ -13,8 +13,8 @@ Shared Pydantic data models used across all layers. All models are frozen (immut
   - `CompactionConfig` — `max_tokens` for compaction summary generation.
   - `LoggingConfig` — minimum log level.
   - `AgentRegistryConfig` — ordered list of `AgentConfig` entries.
-  - `ConversationConfig` — global configuration shared across all agents.
-- `agent.py` — agent identity and execution state types: `Agent` (identity with `name`), `AgentStatus`, `AgentState`, `StepResult`.
+  - `ConversationConfig` — global configuration: `llm_registry`, `agent_registry`, `default_agent` (active agent at start, validated against registry), `utility_llm` (cheap/fast LLM for background tasks, validated against registry), `tool_registry`, `compaction`, `logging`.
+- `agent.py` — agent identity, configuration, and execution state types: `Agent` (identity with `type` and `name`), `AgentConfig(Agent)` (empty base; subclass and add fields per implementation), `AgentStatus`, `AgentState`, `StepResult`.
 - `strategy.py` — strategy identity and configuration: `Strategy` (type identifier), `StrategyConfig` (base config with `max_turns`; subclass for concrete strategy types).
 - `llm.py` — LLM request/response types: `FinishReason`, `LLM`, `LLMUsage` (with `total_tokens` property), `LLMSettings`, `LLMRequest`, `LLMResponse` (with `tool_calls` property), `CompactionResult`.
 - `message.py` — conversation message types: `Role`, `Message`.

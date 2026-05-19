@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from ai_agent.core.models.agent import Agent
+from ai_agent.core.models.agent import Agent, AgentConfig
 from ai_agent.core.models.llm import LLM, LLMSettings
-from ai_agent.core.models.strategy import StrategyConfig
-from ai_agent.core.models.tool import Tool, ToolConfig
+from ai_agent.core.models.tool import ToolConfig
 
 
 class LLMConfig(BaseModel):
@@ -78,22 +77,6 @@ class LoggingConfig(BaseModel):
     )
 
 
-class AgentConfig(Agent):
-    """Per-agent configuration."""
-
-    llm: LLM = Field(description="Default LLM identity for this agent.")
-    tools: list[Tool] = Field(
-        default_factory=list,
-        description="Default tools for this agent.",
-    )
-    system_prompt: str = Field(
-        description="System prompt for this agent.",
-    )
-    strategy: StrategyConfig = Field(
-        description="Reasoning strategy configuration.",
-    )
-
-
 class AgentRegistryConfig(BaseModel):
     """Registry of agent configurations."""
 
@@ -116,6 +99,12 @@ class ConversationConfig(BaseModel):
     agent_registry: AgentRegistryConfig = Field(
         description="Registry of agent configurations.",
     )
+    default_agent: Agent = Field(
+        description="Active agent at conversation start. Must be present in agent_registry.",
+    )
+    utility_llm: LLM = Field(
+        description="Cheap, fast LLM for background tasks (compaction, summarisation). Must be present in llm_registry.",
+    )
     tool_registry: ToolRegistryConfig | None = Field(
         default=None,
         description="Tool registry configuration. None means no tools are exposed.",
@@ -128,3 +117,15 @@ class ConversationConfig(BaseModel):
         default_factory=LoggingConfig,
         description="Logging configuration.",
     )
+
+    @model_validator(mode="after")
+    def _validate_references(self) -> ConversationConfig:
+        agent_names = {a.name for a in self.agent_registry.agents}
+        if self.default_agent.name not in agent_names:
+            raise ValueError(f"default_agent {self.default_agent.name!r} is not in agent_registry.")
+        registered_llms = {
+            (p.provider, m.model) for p in self.llm_registry.registry for m in p.models
+        }
+        if (self.utility_llm.provider, self.utility_llm.model) not in registered_llms:
+            raise ValueError(f"utility_llm {self.utility_llm!r} is not in llm_registry.")
+        return self

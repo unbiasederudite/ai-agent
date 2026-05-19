@@ -12,22 +12,27 @@ from ai_agent.core.models.tool import ToolCall
 class TestAgent:
     """Tests for the Agent identity model."""
 
-    def test_constructs_with_name(self) -> None:
-        agent = Agent(name="coder")
+    def test_constructs_with_type_and_name(self) -> None:
+        agent = Agent(type="node", name="coder")
+        assert agent.type == "node"
         assert agent.name == "coder"
 
     def test_is_frozen(self) -> None:
-        agent = Agent(name="coder")
+        agent = Agent(type="node", name="coder")
         with pytest.raises(Exception):
             agent.name = "other"  # type: ignore[misc]
 
+    def test_requires_type(self) -> None:
+        with pytest.raises((ValidationError, TypeError)):
+            Agent(name="coder")  # type: ignore[call-arg]
+
     def test_requires_name(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            Agent()  # type: ignore[call-arg]
+            Agent(type="node")  # type: ignore[call-arg]
 
-    def test_equality_by_name(self) -> None:
-        assert Agent(name="coder") == Agent(name="coder")
-        assert Agent(name="coder") != Agent(name="reviewer")
+    def test_equality_by_type_and_name(self) -> None:
+        assert Agent(type="node", name="coder") == Agent(type="node", name="coder")
+        assert Agent(type="node", name="coder") != Agent(type="node", name="reviewer")
 
 
 class TestAgentStatus:
@@ -35,9 +40,6 @@ class TestAgentStatus:
 
     def test_status_running(self) -> None:
         assert AgentStatus.RUNNING == "running"
-
-    def test_status_awaiting_tools(self) -> None:
-        assert AgentStatus.AWAITING_TOOLS == "awaiting_tools"
 
     def test_status_complete(self) -> None:
         assert AgentStatus.COMPLETE == "complete"
@@ -110,8 +112,8 @@ class TestAgentStateTransitions:
 
     def test_model_copy_changes_status(self) -> None:
         state = AgentState()
-        next_state = state.model_copy(update={"status": AgentStatus.AWAITING_TOOLS})
-        assert next_state.status == AgentStatus.AWAITING_TOOLS
+        next_state = state.model_copy(update={"status": AgentStatus.COMPLETE})
+        assert next_state.status == AgentStatus.COMPLETE
         assert state.status == AgentStatus.RUNNING  # original unchanged
 
     def test_model_copy_appends_message_immutably(self) -> None:

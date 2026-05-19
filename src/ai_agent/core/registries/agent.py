@@ -1,44 +1,45 @@
-"""Agent registry mapping names to AgentNode instances."""
+"""Agent registry mapping Agent identities to IAgent implementations."""
 
 from __future__ import annotations
 
-from ai_agent.core.agent import AgentNode
 from ai_agent.core.exceptions import AgentNotFoundError
 from ai_agent.core.models.agent import Agent
+from ai_agent.core.protocols.agent import IAgent
 
 
 class AgentRegistry:
-    """Maps agent names to AgentNode instances."""
+    """Maps Agent identities to IAgent implementations."""
 
     def __init__(self) -> None:
-        self._agents: dict[str, AgentNode] = {}
+        self._agents: dict[Agent, IAgent] = {}
 
-    def register(self, agent: Agent, node: AgentNode) -> None:
-        """Register an AgentNode under the given agent identity. First registration wins.
+    def register(self, agent: Agent, implementation: IAgent) -> None:
+        """Register an IAgent under the given agent identity. First registration wins.
 
         Args:
             agent: Agent identity.
-            node: Runtime AgentNode.
+            implementation: Agent implementation.
         """
-        self._agents.setdefault(agent.name, node)
+        self._agents.setdefault(agent, implementation)
 
-    def resolve(self, agent: Agent) -> AgentNode:
-        """Return the AgentNode registered under the given agent identity.
+    def resolve_implementation(self, agent: Agent) -> IAgent:
+        """Return the IAgent registered under the given agent identity.
 
         Args:
             agent: Agent identity.
 
         Raises:
-            AgentNotFoundError: If no agent with that name is registered.
+            AgentNotFoundError: Agent not registered.
         """
         try:
-            return self._agents[agent.name]
+            return self._agents[agent]
         except KeyError:
+            registered = [(a.type, a.name) for a in self._agents]
             raise AgentNotFoundError(
-                f"No agent named {agent.name!r}. Registered: {sorted(self._agents)}"
+                f"No agent type={agent.type!r} name={agent.name!r}. Registered: {registered}"
             ) from None
 
     @property
-    def agents(self) -> list[str]:
-        """All registered agent names in registration order."""
-        return list(self._agents.keys())
+    def agents(self) -> list[Agent]:
+        """All registered agents in registration order."""
+        return list(self._agents)

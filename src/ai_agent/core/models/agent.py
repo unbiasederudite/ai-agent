@@ -15,14 +15,18 @@ class Agent(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    name: str = Field(description="Unique agent name used as the registry key.")
+    type: str = Field(description="Agent type identifier.")
+    name: str = Field(description="Unique agent name.")
+
+
+class AgentConfig(Agent):
+    """Base configuration for all agent types. Subclass with concrete fields per implementation."""
 
 
 class AgentStatus(StrEnum):
     """Control signal produced by a strategy at the end of each reasoning step."""
 
     RUNNING = "running"
-    AWAITING_TOOLS = "awaiting_tools"
     COMPLETE = "complete"
     ERROR = "error"
 
