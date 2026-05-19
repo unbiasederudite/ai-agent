@@ -15,11 +15,7 @@ _log = logging.getLogger(__name__)
 
 
 class RunService:
-    """Executes the agent reasoning loop until a terminal state is reached.
-
-    RunService is a pure loop runner. It only checks for COMPLETE or ERROR.
-    All other state transitions (tool dispatch, retries, etc.) are the strategy's concern.
-    """
+    """Executes the agent reasoning loop until a terminal state is reached."""
 
     def __init__(self, strategy: IReasoningStrategy) -> None:
         self._strategy = strategy
@@ -35,14 +31,14 @@ class RunService:
         """Execute the reasoning loop until a terminal state is reached.
 
         Args:
-            messages: Conversation history for this run (system + prior turns + user message).
-            provider: Resolved LLM provider.
+            messages: Message history.
+            provider: LLM provider.
             model: Model identifier.
             settings: Sampling parameters.
-            tools: Tool definitions exposed to the LLM. None disables tool calling.
+            tools: Tool definitions, or None.
 
         Returns:
-            RunResult with the assistant reply, turn count, and accumulated token usage.
+            Run result.
 
         Raises:
             ReasoningError: Strategy terminates with ERROR or produces no text reply.
@@ -50,9 +46,10 @@ class RunService:
         """
         max_turns = self._strategy.config.max_turns
         current = AgentState(messages=messages)
-        input_tokens = 0
-        output_tokens = 0
+        billed_input_tokens = 0
+        billed_output_tokens = 0
         output: str | None = None
+        last_usage = LLMUsage(input_tokens=0, output_tokens=0)
 
         while True:
             if current.turn >= max_turns:
@@ -65,8 +62,9 @@ class RunService:
                 tools=tools,
             )
             result = self._strategy.step(current, request, provider)
-            input_tokens += result.response.usage.input_tokens
-            output_tokens += result.response.usage.output_tokens
+            billed_input_tokens += result.response.usage.input_tokens
+            billed_output_tokens += result.response.usage.output_tokens
+            last_usage = result.response.usage
 
             if result.state.status == AgentStatus.COMPLETE:
                 output = result.response.message.content
@@ -84,5 +82,8 @@ class RunService:
         return RunResult(
             output=output,
             turns=current.turn,
-            usage=LLMUsage(input_tokens=input_tokens, output_tokens=output_tokens),
+            billed_usage=LLMUsage(
+                input_tokens=billed_input_tokens, output_tokens=billed_output_tokens
+            ),
+            context_usage=last_usage,
         )

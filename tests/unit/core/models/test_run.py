@@ -2,6 +2,7 @@
 
 import pytest
 
+from ai_agent.core.models.agent import Agent
 from ai_agent.core.models.llm import LLM, LLMSettings, LLMUsage
 from ai_agent.core.models.run import RunResult, RunSettings
 from ai_agent.core.models.tool import Tool
@@ -13,34 +14,51 @@ def _usage(inp: int = 10, out: int = 5) -> LLMUsage:
 
 def _make_run_settings(**overrides: object) -> RunSettings:
     defaults: dict[str, object] = {
+        "agent": Agent(type="node", name="default"),
         "llm": LLM(provider="openai", model="gpt-4o"),
         "settings": LLMSettings(temperature=0.7, max_tokens=4096),
     }
     return RunSettings(**{**defaults, **overrides})  # type: ignore[arg-type]
 
 
+def _make_run_result(**overrides: object) -> RunResult:
+    defaults: dict[str, object] = {
+        "output": "hello",
+        "turns": 1,
+        "billed_usage": _usage(),
+        "context_usage": _usage(),
+    }
+    return RunResult(**{**defaults, **overrides})  # type: ignore[arg-type]
+
+
 class TestRunResult:
     def test_constructs_with_required_fields(self) -> None:
-        result = RunResult(output="hello", turns=2, usage=_usage())
+        result = _make_run_result(output="hello", turns=2)
         assert result.output == "hello"
         assert result.turns == 2
 
-    def test_usage_field_is_stored(self) -> None:
+    def test_billed_usage_is_stored(self) -> None:
         u = _usage(inp=100, out=50)
-        result = RunResult(output="hi", turns=1, usage=u)
-        assert result.usage.input_tokens == 100
-        assert result.usage.output_tokens == 50
+        result = _make_run_result(billed_usage=u)
+        assert result.billed_usage.input_tokens == 100
+        assert result.billed_usage.output_tokens == 50
+
+    def test_context_usage_is_stored(self) -> None:
+        u = _usage(inp=200, out=80)
+        result = _make_run_result(context_usage=u)
+        assert result.context_usage.input_tokens == 200
+        assert result.context_usage.output_tokens == 80
 
     def test_turns_zero_is_valid(self) -> None:
-        result = RunResult(output="hi", turns=0, usage=_usage())
+        result = _make_run_result(turns=0)
         assert result.turns == 0
 
     def test_negative_turns_raises(self) -> None:
         with pytest.raises(Exception):
-            RunResult(output="hi", turns=-1, usage=_usage())
+            _make_run_result(turns=-1)
 
     def test_is_frozen(self) -> None:
-        result = RunResult(output="hi", turns=1, usage=_usage())
+        result = _make_run_result()
         with pytest.raises(Exception):
             result.output = "changed"  # type: ignore[misc]
 
@@ -84,13 +102,29 @@ class TestRunSettings:
         assert rs2.tools == ["search"]
         assert rs.tools is None
 
+    def test_requires_agent(self) -> None:
+        with pytest.raises(Exception):
+            RunSettings(
+                llm=LLM(provider="openai", model="gpt-4o"),
+                settings=LLMSettings(temperature=0.7, max_tokens=4096),
+            )  # type: ignore[call-arg]
+
     def test_requires_llm(self) -> None:
         with pytest.raises(Exception):
-            RunSettings(settings=LLMSettings(temperature=0.7, max_tokens=4096))  # type: ignore[call-arg]
+            RunSettings(
+                agent=Agent(type="node", name="x"),
+                settings=LLMSettings(temperature=0.7, max_tokens=4096),
+            )  # type: ignore[call-arg]
 
     def test_requires_settings(self) -> None:
         with pytest.raises(Exception):
-            RunSettings(llm=LLM(provider="openai", model="gpt-4o"))  # type: ignore[call-arg]
+            RunSettings(
+                agent=Agent(type="node", name="x"), llm=LLM(provider="openai", model="gpt-4o")
+            )  # type: ignore[call-arg]
+
+    def test_agent_field_is_stored(self) -> None:
+        rs = _make_run_settings(agent=Agent(type="node", name="coder"))
+        assert rs.agent.name == "coder"
 
     def test_max_tokens_absent_at_top_level(self) -> None:
         assert "max_tokens" not in RunSettings.model_fields

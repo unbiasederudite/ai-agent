@@ -7,7 +7,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ai_agent.core.models.message import Message, Role
-from ai_agent.core.models.tool import ToolDefinition
+from ai_agent.core.models.tool import ToolCall, ToolDefinition
 
 
 class FinishReason(StrEnum):
@@ -35,6 +35,11 @@ class LLMUsage(BaseModel):
     input_tokens: int = Field(description="Input token count.", ge=0)
     output_tokens: int = Field(description="Output token count.", ge=0)
 
+    @property
+    def total_tokens(self) -> int:
+        """Sum of input and output tokens."""
+        return self.input_tokens + self.output_tokens
+
 
 class LLMSettings(BaseModel):
     """LLM sampling parameters."""
@@ -59,6 +64,18 @@ class LLMRequest(BaseModel):
     )
 
 
+class CompactionResult(BaseModel):
+    """Result of a CompactionService.compact() call."""
+
+    model_config = ConfigDict(frozen=True)
+
+    messages: list[Message] = Field(description="Compacted message list ready to use as context.")
+    usage: LLMUsage | None = Field(
+        default=None,
+        description="Token counts for the compaction LLM call. None when no compaction occurred.",
+    )
+
+
 class LLMResponse(BaseModel):
     """Response received from an LLM provider."""
 
@@ -67,6 +84,11 @@ class LLMResponse(BaseModel):
     message: Message = Field(description="The assistant message.")
     finish_reason: FinishReason = Field(description="Why the model stopped generating.")
     usage: LLMUsage = Field(description="Token counts for this completion.")
+
+    @property
+    def tool_calls(self) -> list[ToolCall] | None:
+        """Tool calls requested by the model; delegates to message.tool_calls."""
+        return self.message.tool_calls
 
     @model_validator(mode="after")
     def message_must_be_assistant(self) -> LLMResponse:

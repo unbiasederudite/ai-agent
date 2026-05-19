@@ -213,19 +213,36 @@ class TestRunServiceNoOutput:
 
 
 class TestRunServiceUsage:
-    def test_run_result_has_usage(self) -> None:
+    def test_run_result_has_billed_usage(self) -> None:
         svc = _make_service()
         result = _run(svc)
-        assert isinstance(result.usage, LLMUsage)
+        assert isinstance(result.billed_usage, LLMUsage)
 
-    def test_single_step_usage(self) -> None:
+    def test_run_result_has_context_usage(self) -> None:
         svc = _make_service()
         result = _run(svc)
-        assert result.usage.input_tokens == 5
-        assert result.usage.output_tokens == 3
+        assert isinstance(result.context_usage, LLMUsage)
 
-    def test_multi_step_usage_accumulated(self) -> None:
+    def test_single_step_billed_usage(self) -> None:
+        svc = _make_service()
+        result = _run(svc)
+        assert result.billed_usage.input_tokens == 5
+        assert result.billed_usage.output_tokens == 3
+
+    def test_single_step_context_usage_equals_billed(self) -> None:
+        svc = _make_service()
+        result = _run(svc)
+        assert result.context_usage.input_tokens == 5
+        assert result.context_usage.output_tokens == 3
+
+    def test_multi_step_billed_usage_accumulated(self) -> None:
         svc = _make_service(strategy=_RunningThenComplete())
         result = _run(svc)
-        assert result.usage.input_tokens == 10
-        assert result.usage.output_tokens == 6
+        assert result.billed_usage.input_tokens == 10
+        assert result.billed_usage.output_tokens == 6
+
+    def test_multi_step_context_usage_is_last_step_only(self) -> None:
+        svc = _make_service(strategy=_RunningThenComplete())
+        result = _run(svc)
+        assert result.context_usage.input_tokens == 5
+        assert result.context_usage.output_tokens == 3

@@ -1,6 +1,7 @@
 """Shared Pydantic data models used across all layers."""
 
 from ai_agent.core.models.llm import (
+    CompactionResult,
     FinishReason,
     LLM,
     LLMRequest,
@@ -26,6 +27,7 @@ from ai_agent.core.models.run import RunResult, RunSettings
 __all__ = [
     "Agent",
     "AgentState",
+    "CompactionResult",
     "AgentStatus",
     "FinishReason",
     "LLM",

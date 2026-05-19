@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from ai_agent.core.models.agent import Agent
 from ai_agent.core.models.llm import LLM, LLMSettings, LLMUsage
 from ai_agent.core.models.tool import Tool
 
@@ -13,6 +14,7 @@ class RunSettings(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    agent: Agent = Field(description="Active agent identity.")
     llm: LLM = Field(description="LLM identity.")
     settings: LLMSettings = Field(description="Sampling parameters.")
     tools: list[Tool] | None = Field(
@@ -28,4 +30,5 @@ class RunResult(BaseModel):
 
     output: str = Field(description="Text content of the last assistant message.")
     turns: int = Field(description="Number of reasoning turns executed.", ge=0)
-    usage: LLMUsage = Field(description="Token counts for this run.")
+    billed_usage: LLMUsage = Field(description="Accumulated token counts across all turns.")
+    context_usage: LLMUsage = Field(description="Token counts for the final turn.")

@@ -51,6 +51,12 @@ class TestLLMUsage:
         usage = LLMUsage(input_tokens=0, output_tokens=0)
         assert usage.input_tokens == 0
 
+    def test_total_tokens_is_sum(self) -> None:
+        assert LLMUsage(input_tokens=10, output_tokens=20).total_tokens == 30
+
+    def test_total_tokens_zero(self) -> None:
+        assert LLMUsage(input_tokens=0, output_tokens=0).total_tokens == 0
+
 
 class TestLLMSettings:
     def test_constructs_with_all_fields(self) -> None:
@@ -161,6 +167,17 @@ class TestLLMResponse:
         assert resp.finish_reason == FinishReason.TOOL_CALLS
         assert resp.message.tool_calls is not None
         assert resp.message.tool_calls[0].id == "call_1"
+
+    def test_tool_calls_property_returns_message_tool_calls(self) -> None:
+        tc = ToolCall(id="c1", name="calc", arguments={})
+        msg = Message(role=Role.ASSISTANT, tool_calls=[tc])
+        resp = LLMResponse(message=msg, finish_reason=FinishReason.TOOL_CALLS, usage=self._usage())
+        assert resp.tool_calls == [tc]
+
+    def test_tool_calls_property_none_when_no_tool_calls(self) -> None:
+        msg = Message(role=Role.ASSISTANT, content="hi")
+        resp = LLMResponse(message=msg, finish_reason=FinishReason.STOP, usage=self._usage())
+        assert resp.tool_calls is None
 
     def test_rejects_non_assistant_message(self) -> None:
         with pytest.raises(Exception):

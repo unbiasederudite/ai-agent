@@ -12,12 +12,11 @@ Shared Pydantic data models used across all layers. All models are frozen (immut
   - `ToolRegistryConfig` — tool configurations exposed to the LLM.
   - `CompactionConfig` — `max_tokens` for compaction summary generation.
   - `LoggingConfig` — minimum log level.
-  - `AgentConfig` — per-agent configuration: `name`, `llm`, `tools`, `system_prompt`, `strategy`. Extends `Agent`.
   - `AgentRegistryConfig` — ordered list of `AgentConfig` entries.
   - `ConversationConfig` — global configuration shared across all agents.
 - `agent.py` — agent identity and execution state types: `Agent` (identity with `name`), `AgentStatus`, `AgentState`, `StepResult`.
 - `strategy.py` — strategy identity and configuration: `Strategy` (type identifier), `StrategyConfig` (base config with `max_turns`; subclass for concrete strategy types).
-- `llm.py` — LLM request/response types: `FinishReason`, `LLM`, `LLMUsage`, `LLMSettings`, `LLMRequest`, `LLMResponse`.
+- `llm.py` — LLM request/response types: `FinishReason`, `LLM`, `LLMUsage` (with `total_tokens` property), `LLMSettings`, `LLMRequest`, `LLMResponse` (with `tool_calls` property), `CompactionResult`.
 - `message.py` — conversation message types: `Role`, `Message`.
-- `run.py` — run-level types: `RunSettings`, `RunResult`.
+- `run.py` — run-level types: `RunSettings` (`agent`, `llm`, `settings`, `tools`), `RunResult` (`output`, `turns`, `billed_usage` accumulated across all turns, `context_usage` from the final turn).
 - `tool.py` — tool invocation types: `Tool`, `ToolConfig`, `ToolSchema`, `ToolDefinition`, `ToolContext`, `ToolCall`, `ToolResponse`, `ToolResult`.
