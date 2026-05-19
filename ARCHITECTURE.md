@@ -6,13 +6,14 @@
 |---|---|
 | `src/ai_agent/cli/` | CLI entry points — parse argv, load config, hand off to services |
 | `src/ai_agent/core/` | All agent intelligence: reasoning, decision-making, tool selection, state evolution |
-| `src/ai_agent/core/protocols/` | Protocol interfaces for all external providers, tools, strategies, and the logger |
-| `src/ai_agent/core/registries/` | Runtime registries for LLMs and tools |
-| `src/ai_agent/core/models/` | All Pydantic data models: domain models and startup config |
-| `src/ai_agent/core/strategies/` | Reasoning and selection algorithm implementations |
-| `src/ai_agent/core/services/` | Use-case orchestration |
-| `src/ai_agent/core/context/` | Token budgeting and LLM-based compaction |
+| `src/ai_agent/core/agents/` | Concrete `IAgent` implementations |
 | `src/ai_agent/core/exceptions/` | Full exception hierarchy rooted at `AgentError` |
+| `src/ai_agent/core/factories/` | Factory functions for building core objects from configuration |
+| `src/ai_agent/core/models/` | All Pydantic data models: domain models and startup config |
+| `src/ai_agent/core/protocols/` | Protocol interfaces for all external providers, tools, strategies, agents, and the logger |
+| `src/ai_agent/core/registries/` | Runtime registries for agents, LLMs, and tools |
+| `src/ai_agent/core/services/` | Use-case orchestration |
+| `src/ai_agent/core/strategies/` | Reasoning and selection algorithm implementations |
 | `src/ai_agent/adapters/` | Concrete provider adapter implementations |
 | `tests/unit/` | Pure logic tests — no external deps |
 | `tests/mock/` | Adapter wiring tests — all externals mocked |
@@ -47,7 +48,7 @@ Within a conversation, each user request drives dynamic selection of which agent
 Everything configurable is declared in a single JSON file loaded and validated at startup. Nothing can be changed after the process starts. The configurable surface is:
 
 - **LLM registry** — available providers and their models, including sampling defaults per model
-- **Agent registry** — named agent configurations: default LLM, default tools, optional system prompt, and strategy config (type + turn limit)
+- **Agent registry** — named agents: each entry has a type and name; concrete fields are defined per implementation
 - **Tool registry** — which tools are available across the system
 - **Compaction** — token budget for session compaction when context grows large
 - **Logging** — minimum log level
@@ -94,11 +95,19 @@ Only needed when the new provider is not an LLM.
 
 No changes to any existing strategy or service.
 
+### Add a new agent type
+
+1. Create a concrete `AgentConfig` subclass in `core/models/` (or a domain-specific config file) with the fields the agent needs (e.g. `system_prompt`, `llm`, `strategy`).
+2. Create `XAgent` in `core/agents/` implementing `IAgent` — expose `run_settings` and `run()`.
+3. Register it in `AgentRegistry` at startup via `cli/`.
+
+No changes to services, adapters, or protocols.
+
 ### Add a new strategy
 
-1. Create `XStrategy` in `core/strategies/` implementing the relevant strategy protocol.
-2. Add a discriminator value to the strategy config union in `ReasoningConfig`.
-3. Register it in the strategy factory in `core/`.
+1. Create `XStrategy` in `core/strategies/` implementing `IReasoningStrategy`.
+2. Subclass `StrategyConfig` with the fields the strategy needs and use the `type` field as the discriminator.
+3. Register it in the strategy factory in `core/factories/`.
 
 No changes to services, adapters, or CLI.
 
@@ -131,11 +140,13 @@ Using the OpenAI message and tool-calling format as the internal wire format mea
 
 | Pattern | Usage |
 |---------|-------|
+| `XAgent` | Concrete agent implementations in `core/agents/` |
 | `XStrategy` | Interchangeable algorithm implementations in `core/strategies/` |
 | `XService` | Orchestration and use-case logic in `core/services/` |
+| `IAgent` | Interface / Protocol for agent implementations in `core/protocols/` |
 | `IXProvider` | Interface / Protocol for external providers in `core/protocols/` |
+| `ITool` | Interface for agent-callable tools in `core/protocols/` |
 | `XAdapter` | Concrete bridge to a runtime or external system in `adapters/` |
-| `ITool` | Interface for agent-callable tools |
 | `XConfig` | Pydantic config model for a subsystem in `core/models/` |
 | `XError` | Typed exception for a domain in `core/exceptions/` |
 | `AgentLogger` | Structured logger (one instance per component) |
