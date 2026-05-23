@@ -1,9 +1,8 @@
-"""Protocol interfaces for all external providers, tools, strategies, and the logger."""
+"""Protocol interfaces for all external providers, tools, and strategies."""
 
-from ai_agent.core.protocols.agent import IAgent
-from ai_agent.core.protocols.llm import ILLMProvider
-from ai_agent.core.protocols.logger import AgentLogger
-from ai_agent.core.protocols.strategy import IReasoningStrategy
-from ai_agent.core.protocols.tool import ITool
+from ai_agent.core.protocols.agent import IAgent as IAgent
+from ai_agent.core.protocols.llm import ILLMProvider as ILLMProvider
+from ai_agent.core.protocols.strategy import IReasoningStrategy as IReasoningStrategy
+from ai_agent.core.protocols.tool import ITool as ITool
 
-__all__ = ["AgentLogger", "IAgent", "ILLMProvider", "IReasoningStrategy", "ITool"]
+__all__ = ["IAgent", "ILLMProvider", "IReasoningStrategy", "ITool"]
