@@ -27,7 +27,7 @@
 cli → services → strategies → protocols → adapters
 ```
 
-Cross-cutting (available to every layer): `models`, `exceptions`, `AgentLogger`
+Cross-cutting (available to every layer): `models`, `exceptions`, `logging.Logger`
 
 Adapters implement the protocol interfaces and therefore import from `core/protocols/`. The arrow shows the runtime call direction, not the import direction.
 
@@ -149,5 +149,5 @@ Using the OpenAI message and tool-calling format as the internal wire format mea
 | `XAdapter` | Concrete bridge to a runtime or external system in `adapters/` |
 | `XConfig` | Pydantic config model for a subsystem in `core/models/` |
 | `XError` | Typed exception for a domain in `core/exceptions/` |
-| `AgentLogger` | Structured logger (one instance per component) |
+| `logging.getLogger(__name__)` | Standard logger (one per module) |
 | Plain noun | Data-only `BaseModel` |
