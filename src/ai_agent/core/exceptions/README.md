@@ -13,11 +13,11 @@ Platform exception hierarchy. All exceptions inherit from `AgentError`.
   - `ToolError` — base class for tool-related failures.
   - `ToolSchemaError` — invalid tool schema at registration time.
   - `ToolNotFoundError` — requested tool not present in the registry.
-  - `ToolExecutionError` — tool raised an exception during invocation.
   - `AgentNotFoundError` — requested agent not present in the registry.
+  - `UserMessageTooLongError` — user message exceeds the configured character limit.
   - `ProviderError` — base class for external provider failures.
   - `ProviderNotFoundError` — requested provider or model is not registered.
+  - `ContextWindowExceededError` — message list exceeds the provider's context window.
   - `CompletionError` — LLM completion request failed.
   - `AuthenticationError` — provider rejected credentials.
   - `RateLimitError` — provider throttled the request.
-  - `StateError` — illegal agent state transition.

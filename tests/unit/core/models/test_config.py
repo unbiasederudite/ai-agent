@@ -93,27 +93,60 @@ class TestStrategyConfig:
 class TestCompactionConfig:
     """Tests for CompactionConfig — LLM-based session compaction settings."""
 
-    def test_compaction_config_defaults(self) -> None:
-        cfg = CompactionConfig()
+    def _make(self, **overrides: object) -> CompactionConfig:
+        defaults: dict[str, object] = {
+            "llm": LLM(provider="test", model="test-model"),
+            "temperature": 0.3,
+            "threshold": 0.8,
+        }
+        return CompactionConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
+
+    def test_compaction_config_constructs(self) -> None:
+        cfg = self._make()
         assert cfg.max_tokens >= 1
 
     def test_compaction_config_is_frozen(self) -> None:
-        cfg = CompactionConfig()
+        cfg = self._make()
         with pytest.raises(Exception):
             cfg.max_tokens = 9999  # type: ignore[misc]
 
     def test_compaction_config_rejects_zero_max_tokens(self) -> None:
         with pytest.raises(ValidationError):
-            CompactionConfig(max_tokens=0)
+            self._make(max_tokens=0)
 
     def test_compaction_config_max_tokens_can_be_set(self) -> None:
-        cfg = CompactionConfig(max_tokens=4096)
+        cfg = self._make(max_tokens=4096)
         assert cfg.max_tokens == 4096
 
     def test_compaction_config_has_no_ratio_field(self) -> None:
         assert "ratio" not in CompactionConfig.model_fields
 
-    def test_conversation_config_compaction_defaults(
+    def test_compaction_config_llm_stored(self) -> None:
+        cfg = self._make(llm=LLM(provider="p", model="m"))
+        assert cfg.llm.provider == "p"
+        assert cfg.llm.model == "m"
+
+    def test_compaction_config_temperature_stored(self) -> None:
+        cfg = self._make(temperature=0.5)
+        assert cfg.temperature == 0.5
+
+    def test_compaction_config_threshold_stored(self) -> None:
+        cfg = self._make(threshold=0.75)
+        assert cfg.threshold == 0.75
+
+    def test_compaction_config_rejects_threshold_above_one(self) -> None:
+        with pytest.raises(ValidationError):
+            self._make(threshold=1.1)
+
+    def test_compaction_config_rejects_threshold_below_zero(self) -> None:
+        with pytest.raises(ValidationError):
+            self._make(threshold=-0.1)
+
+    def test_compaction_config_rejects_invalid_temperature(self) -> None:
+        with pytest.raises(ValidationError):
+            self._make(temperature=2.1)
+
+    def test_conversation_config_compaction_stored(
         self, conversation_config: ConversationConfig
     ) -> None:
         assert isinstance(conversation_config.compaction, CompactionConfig)
@@ -196,7 +229,11 @@ class TestConversationConfig:
                 agents=[AgentConfig(type="node", name="default")]
             ),
             "default_agent": Agent(type="node", name="default"),
-            "utility_llm": LLM(provider="test", model="test-model"),
+            "compaction": CompactionConfig(
+                llm=LLM(provider="test", model="test-model"),
+                temperature=0.3,
+                threshold=0.8,
+            ),
         }
         return ConversationConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
 
@@ -245,7 +282,11 @@ class TestConversationConfig:
         )
         cfg = self._make(
             llm_registry=LLMRegistryConfig(registry=[provider_cfg]),
-            utility_llm=LLM(provider="test", model="a"),
+            compaction=CompactionConfig(
+                llm=LLM(provider="test", model="a"),
+                temperature=0.3,
+                threshold=0.8,
+            ),
         )
         assert len(cfg.llm_registry.registry) == 1
         assert len(cfg.llm_registry.registry[0].models) == 2
@@ -265,15 +306,37 @@ class TestConversationConfig:
         cfg = self._make()
         assert cfg.default_agent.name == "default"
 
-    def test_utility_llm_preserved(self) -> None:
+    def test_compaction_llm_preserved(self) -> None:
         cfg = self._make()
-        assert cfg.utility_llm.provider == "test"
-        assert cfg.utility_llm.model == "test-model"
+        assert cfg.compaction.llm.provider == "test"
+        assert cfg.compaction.llm.model == "test-model"
 
     def test_default_agent_not_in_registry_raises(self) -> None:
         with pytest.raises(ValidationError):
             self._make(default_agent=Agent(type="node", name="nonexistent"))
 
-    def test_utility_llm_not_in_registry_raises(self) -> None:
+    def test_compaction_llm_not_in_registry_raises(self) -> None:
         with pytest.raises(ValidationError):
-            self._make(utility_llm=LLM(provider="other", model="other-model"))
+            self._make(
+                compaction=CompactionConfig(
+                    llm=LLM(provider="other", model="other-model"),
+                    temperature=0.3,
+                    threshold=0.8,
+                )
+            )
+
+    def test_message_char_limit_defaults(self) -> None:
+        cfg = self._make()
+        assert cfg.message_char_limit >= 1
+
+    def test_message_char_limit_can_be_set(self) -> None:
+        cfg = self._make(message_char_limit=500)
+        assert cfg.message_char_limit == 500
+
+    def test_message_char_limit_rejects_zero(self) -> None:
+        with pytest.raises(ValidationError):
+            self._make(message_char_limit=0)
+
+    def test_message_char_limit_rejects_negative(self) -> None:
+        with pytest.raises(ValidationError):
+            self._make(message_char_limit=-1)

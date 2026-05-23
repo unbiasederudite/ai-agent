@@ -1,5 +1,6 @@
 """Shared Pydantic data models used across all layers."""
 
+from ai_agent.core.models.budget import ContextBudget as ContextBudget
 from ai_agent.core.models.llm import (
     CompactionResult,
     FinishReason,
@@ -26,6 +27,7 @@ from ai_agent.core.models.run import RunResult, RunSettings
 
 __all__ = [
     "Agent",
+    "ContextBudget",
     "AgentConfig",
     "AgentState",
     "CompactionResult",

@@ -5,6 +5,7 @@ import pytest
 from ai_agent.core.models.agent import Agent, AgentConfig
 from ai_agent.core.models.config import (
     AgentRegistryConfig,
+    CompactionConfig,
     ConversationConfig,
     LLMConfig,
     LLMProviderConfig,
@@ -44,5 +45,9 @@ def conversation_config(llm_config: LLM, agent_config: AgentConfig) -> Conversat
         ),
         agent_registry=AgentRegistryConfig(agents=[agent_config]),
         default_agent=Agent(type="node", name=agent_config.name),
-        utility_llm=llm_config,
+        compaction=CompactionConfig(
+            llm=llm_config,
+            temperature=0.3,
+            threshold=0.8,
+        ),
     )

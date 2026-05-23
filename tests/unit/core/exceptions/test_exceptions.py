@@ -9,16 +9,16 @@ from ai_agent.core.exceptions import (
     CompletionError,
     ConfigError,
     ContextBudgetError,
+    ContextWindowExceededError,
     LoopDetectedError,
     ProviderError,
     ProviderNotFoundError,
     RateLimitError,
     ReasoningError,
-    StateError,
     ToolError,
-    ToolExecutionError,
     ToolNotFoundError,
     ToolSchemaError,
+    UserMessageTooLongError,
 )
 
 
@@ -43,9 +43,6 @@ class TestAgentErrorHierarchy:
     def test_loop_detected_error_is_agent_error(self) -> None:
         assert issubclass(LoopDetectedError, AgentError)
 
-    def test_state_error_is_agent_error(self) -> None:
-        assert issubclass(StateError, AgentError)
-
     def test_agent_error_is_exception(self) -> None:
         assert issubclass(AgentError, Exception)
 
@@ -54,9 +51,6 @@ class TestAgentErrorHierarchy:
 
     def test_tool_not_found_error_is_tool_error(self) -> None:
         assert issubclass(ToolNotFoundError, ToolError)
-
-    def test_tool_execution_error_is_tool_error(self) -> None:
-        assert issubclass(ToolExecutionError, ToolError)
 
     def test_context_budget_error_is_reasoning_error(self) -> None:
         assert issubclass(ContextBudgetError, ReasoningError)
@@ -78,6 +72,12 @@ class TestAgentErrorHierarchy:
 
     def test_rate_limit_error_is_provider_error(self) -> None:
         assert issubclass(RateLimitError, ProviderError)
+
+    def test_user_message_too_long_error_is_agent_error(self) -> None:
+        assert issubclass(UserMessageTooLongError, AgentError)
+
+    def test_context_window_exceeded_error_is_provider_error(self) -> None:
+        assert issubclass(ContextWindowExceededError, ProviderError)
 
 
 class TestAgentErrorChaining:
@@ -101,12 +101,6 @@ class TestAgentErrorChaining:
             raise CompletionError("LLM request timed out") from original
         assert exc_info.value.__cause__ is original
 
-    def test_tool_execution_error_chains_original_cause(self) -> None:
-        original = ValueError("bad arg")
-        with pytest.raises(ToolExecutionError) as exc_info:
-            raise ToolExecutionError("tool raised") from original
-        assert exc_info.value.__cause__ is original
-
 
 class TestAgentErrorMessage:
     """Tests that error messages are accessible."""
@@ -122,3 +116,7 @@ class TestAgentErrorMessage:
     def test_tool_not_found_error_stores_message(self) -> None:
         err = ToolNotFoundError("calculator not registered")
         assert str(err) == "calculator not registered"
+
+    def test_user_message_too_long_error_stores_message(self) -> None:
+        err = UserMessageTooLongError("message is 500 characters, limit is 100.")
+        assert str(err) == "message is 500 characters, limit is 100."

@@ -59,6 +59,13 @@ class CompactionConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    llm: LLM = Field(description="LLM used to generate compaction summaries.")
+    temperature: float = Field(
+        description="Sampling temperature for the compaction LLM.", ge=0.0, le=2.0
+    )
+    threshold: float = Field(
+        description="Context fill fraction that triggers compaction.", ge=0.0, le=1.0
+    )
     max_tokens: int = Field(
         default=2048,
         description="Maximum tokens the LLM may generate for the compaction summary.",
@@ -102,16 +109,17 @@ class ConversationConfig(BaseModel):
     default_agent: Agent = Field(
         description="Active agent at conversation start. Must be present in agent_registry.",
     )
-    utility_llm: LLM = Field(
-        description="Cheap, fast LLM for background tasks (compaction, summarisation). Must be present in llm_registry.",
-    )
     tool_registry: ToolRegistryConfig | None = Field(
         default=None,
         description="Tool registry configuration. None means no tools are exposed.",
     )
     compaction: CompactionConfig = Field(
-        default_factory=CompactionConfig,
         description="Session compaction configuration.",
+    )
+    message_char_limit: int = Field(
+        default=10_000,
+        ge=1,
+        description="Maximum character length of a user message.",
     )
     logging: LoggingConfig = Field(
         default_factory=LoggingConfig,
@@ -126,6 +134,6 @@ class ConversationConfig(BaseModel):
         registered_llms = {
             (p.provider, m.model) for p in self.llm_registry.registry for m in p.models
         }
-        if (self.utility_llm.provider, self.utility_llm.model) not in registered_llms:
-            raise ValueError(f"utility_llm {self.utility_llm!r} is not in llm_registry.")
+        if (self.compaction.llm.provider, self.compaction.llm.model) not in registered_llms:
+            raise ValueError(f"compaction.llm {self.compaction.llm!r} is not in llm_registry.")
         return self
