@@ -16,7 +16,7 @@ All parameters, return types, and attributes must be fully type-annotated. No im
 ## Logging
 
 - **No `print()`** anywhere in the codebase.
-- Use the project's `AgentLogger` (structured logger) exclusively.
+- Use `logging.getLogger(__name__)` at module level. No `print()` anywhere.
 
 ## OOP and Module Structure
 
