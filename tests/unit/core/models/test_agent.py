@@ -1,38 +1,90 @@
-"""Unit tests for Agent identity, AgentStatus enum, AgentState model, and StepResult."""
+"""Unit tests for AgentConfig, AgentStatus, AgentState, and StepResult."""
 
 import pytest
 from pydantic import ValidationError
 
-from ai_agent.core.models.agent import Agent, AgentState, AgentStatus, StepResult
-from ai_agent.core.models.llm import FinishReason, LLMResponse, LLMUsage
+from ai_agent.core.models.agent import AgentConfig, AgentState, AgentStatus, StepResult
+from ai_agent.core.models.llm import FinishReason, LLM, LLMResponse, LLMSettings, LLMUsage
 from ai_agent.core.models.message import Message, Role
-from ai_agent.core.models.tool import ToolCall
+from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.tool import Tool, ToolCall
 
 
-class TestAgent:
-    """Tests for the Agent identity model."""
+_LLM = LLM(provider="test", model="test-model")
+_SETTINGS = LLMSettings(temperature=0.7, max_tokens=4096)
+_STRATEGY = StrategyConfig(type="cot")
 
-    def test_constructs_with_type_and_name(self) -> None:
-        agent = Agent(type="node", name="coder")
-        assert agent.type == "node"
-        assert agent.name == "coder"
 
-    def test_is_frozen(self) -> None:
-        agent = Agent(type="node", name="coder")
-        with pytest.raises(Exception):
-            agent.name = "other"  # type: ignore[misc]
+def _make_agent_config(**overrides: object) -> AgentConfig:
+    defaults: dict[str, object] = {
+        "name": "default",
+        "description": "Test agent.",
+        "llm": _LLM,
+        "settings": _SETTINGS,
+        "strategy": _STRATEGY,
+    }
+    return AgentConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
 
-    def test_requires_type(self) -> None:
+
+class TestAgentConfig:
+    """Tests for the flattened AgentConfig model."""
+
+    def test_constructs_with_required_fields(self) -> None:
+        cfg = _make_agent_config()
+        assert cfg.name == "default"
+        assert cfg.llm == _LLM
+        assert cfg.settings == _SETTINGS
+        assert cfg.strategy == _STRATEGY
+
+    def test_description_is_required(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            Agent(name="coder")  # type: ignore[call-arg]
+            AgentConfig(name="x", llm=_LLM, settings=_SETTINGS, strategy=_STRATEGY)  # type: ignore[call-arg]
+
+    def test_description_can_be_set(self) -> None:
+        cfg = _make_agent_config(description="A helpful coding agent.")
+        assert cfg.description == "A helpful coding agent."
+
+    def test_system_prompt_defaults_to_empty(self) -> None:
+        assert _make_agent_config().system_prompt == ""
+
+    def test_system_prompt_can_be_set(self) -> None:
+        cfg = _make_agent_config(system_prompt="You are helpful.")
+        assert cfg.system_prompt == "You are helpful."
+
+    def test_tools_defaults_to_empty(self) -> None:
+        assert _make_agent_config().tools == []
+
+    def test_tools_empty_list_stored(self) -> None:
+        assert _make_agent_config(tools=[]).tools == []
+
+    def test_tools_subset_stored(self) -> None:
+        tool = Tool(type="stub", name="calc")
+        cfg = _make_agent_config(tools=[tool])
+        assert cfg.tools == [tool]
 
     def test_requires_name(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            Agent(type="node")  # type: ignore[call-arg]
+            AgentConfig(llm=_LLM, settings=_SETTINGS, strategy=_STRATEGY)  # type: ignore[call-arg]
 
-    def test_equality_by_type_and_name(self) -> None:
-        assert Agent(type="node", name="coder") == Agent(type="node", name="coder")
-        assert Agent(type="node", name="coder") != Agent(type="node", name="reviewer")
+    def test_requires_llm(self) -> None:
+        with pytest.raises((ValidationError, TypeError)):
+            AgentConfig(name="x", settings=_SETTINGS, strategy=_STRATEGY)  # type: ignore[call-arg]
+
+    def test_requires_settings(self) -> None:
+        with pytest.raises((ValidationError, TypeError)):
+            AgentConfig(name="x", llm=_LLM, strategy=_STRATEGY)  # type: ignore[call-arg]
+
+    def test_requires_strategy(self) -> None:
+        with pytest.raises((ValidationError, TypeError)):
+            AgentConfig(name="x", llm=_LLM, settings=_SETTINGS)  # type: ignore[call-arg]
+
+    def test_is_frozen(self) -> None:
+        cfg = _make_agent_config()
+        with pytest.raises(Exception):
+            cfg.name = "other"  # type: ignore[misc]
+
+    def test_has_no_type_field(self) -> None:
+        assert "type" not in AgentConfig.model_fields
 
 
 class TestAgentStatus:
@@ -108,20 +160,20 @@ class TestAgentStateTransitions:
         state = AgentState()
         next_state = state.model_copy(update={"turn": state.turn + 1})
         assert next_state.turn == 1
-        assert state.turn == 0  # original unchanged
+        assert state.turn == 0
 
     def test_model_copy_changes_status(self) -> None:
         state = AgentState()
         next_state = state.model_copy(update={"status": AgentStatus.COMPLETE})
         assert next_state.status == AgentStatus.COMPLETE
-        assert state.status == AgentStatus.RUNNING  # original unchanged
+        assert state.status == AgentStatus.RUNNING
 
     def test_model_copy_appends_message_immutably(self) -> None:
         state = AgentState()
         msg = Message(role=Role.ASSISTANT, content="hi")
         next_state = state.model_copy(update={"messages": [*state.messages, msg]})
         assert len(next_state.messages) == 1
-        assert len(state.messages) == 0  # original unchanged
+        assert len(state.messages) == 0
 
     def test_model_copy_preserves_unchanged_fields(self) -> None:
         state = AgentState(turn=3)

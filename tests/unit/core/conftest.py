@@ -2,16 +2,15 @@
 
 import pytest
 
-from ai_agent.core.models.agent import Agent, AgentConfig
+from ai_agent.core.models.agent import AgentConfig
 from ai_agent.core.models.config import (
-    AgentRegistryConfig,
     CompactionConfig,
     ConversationConfig,
     LLMConfig,
     LLMProviderConfig,
-    LLMRegistryConfig,
 )
 from ai_agent.core.models.llm import LLM, LLMSettings
+from ai_agent.core.models.strategy import StrategyConfig
 
 
 @pytest.fixture()
@@ -21,33 +20,37 @@ def llm_config() -> LLM:
 
 
 @pytest.fixture()
-def agent_config() -> AgentConfig:
+def agent_config(llm_config: LLM) -> AgentConfig:
     """Minimal AgentConfig for tests."""
-    return AgentConfig(type="node", name="default")
+    return AgentConfig(
+        name="default",
+        description="Default test agent.",
+        llm=llm_config,
+        settings=LLMSettings(temperature=0.7, max_tokens=4096),
+        strategy=StrategyConfig(type="cot"),
+    )
 
 
 @pytest.fixture()
 def conversation_config(llm_config: LLM, agent_config: AgentConfig) -> ConversationConfig:
     """Minimal ConversationConfig for tests."""
     return ConversationConfig(
-        llm_registry=LLMRegistryConfig(
-            registry=[
-                LLMProviderConfig(
-                    provider=llm_config.provider,
-                    models=[
-                        LLMConfig(
-                            model=llm_config.model,
-                            settings=LLMSettings(temperature=0.7, max_tokens=4096),
-                        )
-                    ],
-                )
-            ]
-        ),
-        agent_registry=AgentRegistryConfig(agents=[agent_config]),
-        default_agent=Agent(type="node", name=agent_config.name),
+        llm_registry=[
+            LLMProviderConfig(
+                provider=llm_config.provider,
+                models=[
+                    LLMConfig(
+                        model=llm_config.model,
+                        settings=LLMSettings(temperature=0.7, max_tokens=4096),
+                    )
+                ],
+            )
+        ],
+        agent_registry=[agent_config],
+        default_agent=agent_config.name,
         compaction=CompactionConfig(
             llm=llm_config,
-            temperature=0.3,
+            settings=LLMSettings(temperature=0.3, max_tokens=2048),
             threshold=0.8,
         ),
     )

@@ -6,7 +6,6 @@ All agent intelligence and business logic.
 
 | Package | Description |
 |---------|-------------|
-| `agents/` | Concrete `IAgent` implementations |
 | `exceptions/` | Platform exception hierarchy |
 | `factories/` | Factory functions for building core objects from config |
 | `models/` | Shared Pydantic data models and configuration models |

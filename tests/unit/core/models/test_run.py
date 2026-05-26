@@ -2,7 +2,6 @@
 
 import pytest
 
-from ai_agent.core.models.agent import Agent
 from ai_agent.core.models.llm import LLM, LLMSettings, LLMUsage
 from ai_agent.core.models.run import RunResult, RunSettings
 from ai_agent.core.models.tool import Tool
@@ -14,7 +13,7 @@ def _usage(inp: int = 10, out: int = 5) -> LLMUsage:
 
 def _make_run_settings(**overrides: object) -> RunSettings:
     defaults: dict[str, object] = {
-        "agent": Agent(type="node", name="default"),
+        "agent": "default",
         "llm": LLM(provider="openai", model="gpt-4o"),
         "settings": LLMSettings(temperature=0.7, max_tokens=4096),
     }
@@ -112,19 +111,17 @@ class TestRunSettings:
     def test_requires_llm(self) -> None:
         with pytest.raises(Exception):
             RunSettings(
-                agent=Agent(type="node", name="x"),
+                agent="x",
                 settings=LLMSettings(temperature=0.7, max_tokens=4096),
             )  # type: ignore[call-arg]
 
     def test_requires_settings(self) -> None:
         with pytest.raises(Exception):
-            RunSettings(
-                agent=Agent(type="node", name="x"), llm=LLM(provider="openai", model="gpt-4o")
-            )  # type: ignore[call-arg]
+            RunSettings(agent="x", llm=LLM(provider="openai", model="gpt-4o"))  # type: ignore[call-arg]
 
     def test_agent_field_is_stored(self) -> None:
-        rs = _make_run_settings(agent=Agent(type="node", name="coder"))
-        assert rs.agent.name == "coder"
+        rs = _make_run_settings(agent="coder")
+        assert rs.agent == "coder"
 
     def test_max_tokens_absent_at_top_level(self) -> None:
         assert "max_tokens" not in RunSettings.model_fields

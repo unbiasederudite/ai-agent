@@ -1,4 +1,4 @@
-"""Agent identity and execution state types."""
+"""Agent configuration and execution state types."""
 
 from __future__ import annotations
 
@@ -6,21 +6,27 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ai_agent.core.models.llm import LLMResponse
+from ai_agent.core.models.llm import LLM, LLMResponse, LLMSettings
 from ai_agent.core.models.message import Message
+from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.tool import Tool
 
 
-class Agent(BaseModel):
-    """Agent identity."""
+class AgentConfig(BaseModel):
+    """Configuration for a conversational agent."""
 
     model_config = ConfigDict(frozen=True)
 
-    type: str = Field(description="Agent type identifier.")
     name: str = Field(description="Unique agent name.")
-
-
-class AgentConfig(Agent):
-    """Base configuration for all agent types. Subclass with concrete fields per implementation."""
+    description: str = Field(description="Human-readable agent description.")
+    system_prompt: str = Field(default="", description="System prompt.")
+    llm: LLM = Field(description="LLM identity.")
+    settings: LLMSettings = Field(description="Sampling parameters.")
+    strategy: StrategyConfig = Field(description="Reasoning strategy.")
+    tools: list[Tool] = Field(
+        default_factory=list,
+        description="Active tools for this agent. Empty list means no tools.",
+    )
 
 
 class AgentStatus(StrEnum):

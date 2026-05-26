@@ -11,7 +11,7 @@ from ai_agent.core.models.llm import (
     LLMUsage,
 )
 from ai_agent.core.models.message import Message, Role
-from ai_agent.core.models.agent import Agent, AgentConfig, AgentState, AgentStatus, StepResult
+from ai_agent.core.models.agent import AgentConfig, AgentState, AgentStatus, StepResult
 from ai_agent.core.models.strategy import Strategy, StrategyConfig
 from ai_agent.core.models.tool import (
     Tool,
@@ -26,7 +26,6 @@ from ai_agent.core.models.tool import (
 from ai_agent.core.models.run import RunResult, RunSettings
 
 __all__ = [
-    "Agent",
     "ContextBudget",
     "AgentConfig",
     "AgentState",

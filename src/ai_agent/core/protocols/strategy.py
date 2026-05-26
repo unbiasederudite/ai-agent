@@ -12,7 +12,8 @@ from ai_agent.core.protocols.llm import ILLMProvider
 class IReasoningStrategy(Protocol):
     """Interface that every reasoning strategy must satisfy."""
 
-    config: StrategyConfig
+    @property
+    def config(self) -> StrategyConfig: ...
 
     def step(
         self,

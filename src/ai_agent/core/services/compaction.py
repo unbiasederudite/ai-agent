@@ -12,10 +12,10 @@ from ai_agent.core.protocols.llm import ILLMProvider
 _log = logging.getLogger(__name__)
 
 
-_COMPACTION_PROMPT = (
-    "Summarize the conversation above into a concise paragraph. "
-    "Preserve all key decisions, conclusions, facts, and context required to continue the conversation."
-)
+_COMPACTION_PROMPT = """
+Summarize the conversation above into a concise paragraph.
+Preserve all key decisions, conclusions, facts, and context required to continue the conversation.
+"""
 
 
 class CompactionService:
