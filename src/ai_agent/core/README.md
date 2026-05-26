@@ -13,6 +13,7 @@ All agent intelligence and business logic.
 | `registries/` | Runtime registries for agents, LLMs, and tools |
 | `services/` | Use-case orchestration services |
 | `strategies/` | Concrete reasoning strategy implementations |
+| `tools/` | Concrete tool implementations |
 
 ## Files
 
