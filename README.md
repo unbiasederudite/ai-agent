@@ -49,7 +49,6 @@ Read these files in order before writing or reviewing any code:
 src/ai_agent/
   cli/            # Entry points — parse argv, load config, delegate to services
   core/
-    agents/       # Concrete IAgent implementations
     exceptions/   # AgentError hierarchy
     factories/    # Factory functions for building core objects from config
     models/       # All Pydantic data models
@@ -57,6 +56,7 @@ src/ai_agent/
     registries/   # Runtime registries
     services/     # Use-case orchestration
     strategies/   # Reasoning and selection algorithm implementations
+    tools/        # Concrete tool implementations
   adapters/       # Concrete provider adapter implementations
 
 tests/
