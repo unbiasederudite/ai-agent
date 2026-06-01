@@ -28,6 +28,7 @@ def agent_config(llm_config: LLM) -> AgentConfig:
         llm=llm_config,
         settings=LLMSettings(temperature=0.7, max_tokens=4096),
         strategy=StrategyConfig(type="cot"),
+        tools=[],
     )
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Final
 
 from ai_agent.core.exceptions import CompletionError
 from ai_agent.core.models.llm import CompactionResult, LLMRequest, LLMSettings, LLMUsage
@@ -28,10 +29,10 @@ class CompactionService:
         settings: LLMSettings,
         compaction_prompt: str = _COMPACTION_PROMPT,
     ) -> None:
-        self._provider = provider
-        self._model = model
-        self._settings = settings
-        self._compaction_prompt = compaction_prompt
+        self._provider: Final = provider
+        self._model: Final = model
+        self._settings: Final = settings
+        self._compaction_prompt: Final = compaction_prompt
 
     def compact(self, messages: list[Message], keep_recent_turns: int = 3) -> CompactionResult:
         """Summarise old turns and return a compacted message list with token usage.

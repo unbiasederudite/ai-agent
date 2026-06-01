@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Final
 
 from ai_agent.core.models.tool import ToolCall, ToolResult
 from ai_agent.core.registries.tool import ToolRegistry
@@ -14,7 +15,7 @@ class ToolService:
     """Executes tool calls against the tool registry."""
 
     def __init__(self, registry: ToolRegistry) -> None:
-        self._registry = registry
+        self._registry: Final = registry
 
     def dispatch(self, tool_calls: list[ToolCall]) -> list[ToolResult]:
         """Execute tool calls and return one ToolResult per call.
@@ -36,7 +37,7 @@ class ToolService:
             )
 
         try:
-            resp = self._registry.resolve_implementation(tool.type).execute(tc.name, tc.arguments)
+            resp = self._registry.resolve_implementation(tool).execute(tc.arguments)
             return ToolResult(id=tc.id, name=tc.name, content=resp.content, is_error=resp.is_error)
         except Exception as exc:  # noqa: BLE001
             _log.warning("tool_service.execute_failed", extra={"tool": tc.name, "error": str(exc)})

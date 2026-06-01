@@ -1,6 +1,7 @@
 """Pure reasoning loop execution engine."""
 
 import logging
+from typing import Final
 
 from ai_agent.core.exceptions import LoopDetectedError, ReasoningError
 from ai_agent.core.models.llm import LLMRequest, LLMSettings, LLMUsage
@@ -18,7 +19,7 @@ class RunService:
     """Executes the agent reasoning loop until a terminal state is reached."""
 
     def __init__(self, strategy: IReasoningStrategy) -> None:
-        self._strategy = strategy
+        self._strategy: Final = strategy
 
     def run(
         self,

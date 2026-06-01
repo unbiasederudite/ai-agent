@@ -22,6 +22,7 @@ def _make_agent_config(**overrides: object) -> AgentConfig:
         "llm": _LLM,
         "settings": _SETTINGS,
         "strategy": _STRATEGY,
+        "tools": [],
     }
     return AgentConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
 
@@ -38,21 +39,22 @@ class TestAgentConfig:
 
     def test_description_is_required(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            AgentConfig(name="x", llm=_LLM, settings=_SETTINGS, strategy=_STRATEGY)  # type: ignore[call-arg]
+            AgentConfig(name="x", llm=_LLM, settings=_SETTINGS, strategy=_STRATEGY, tools=[])  # type: ignore[call-arg]
 
     def test_description_can_be_set(self) -> None:
         cfg = _make_agent_config(description="A helpful coding agent.")
         assert cfg.description == "A helpful coding agent."
 
-    def test_system_prompt_defaults_to_empty(self) -> None:
-        assert _make_agent_config().system_prompt == ""
+    def test_system_prompt_defaults_to_none(self) -> None:
+        assert _make_agent_config().system_prompt is None
 
     def test_system_prompt_can_be_set(self) -> None:
         cfg = _make_agent_config(system_prompt="You are helpful.")
         assert cfg.system_prompt == "You are helpful."
 
-    def test_tools_defaults_to_empty(self) -> None:
-        assert _make_agent_config().tools == []
+    def test_tools_is_required(self) -> None:
+        with pytest.raises((ValidationError, TypeError)):
+            AgentConfig(name="x", description="d", llm=_LLM, settings=_SETTINGS, strategy=_STRATEGY)  # type: ignore[call-arg]
 
     def test_tools_empty_list_stored(self) -> None:
         assert _make_agent_config(tools=[]).tools == []
@@ -64,19 +66,19 @@ class TestAgentConfig:
 
     def test_requires_name(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            AgentConfig(llm=_LLM, settings=_SETTINGS, strategy=_STRATEGY)  # type: ignore[call-arg]
+            AgentConfig(description="d", llm=_LLM, settings=_SETTINGS, strategy=_STRATEGY, tools=[])  # type: ignore[call-arg]
 
     def test_requires_llm(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            AgentConfig(name="x", settings=_SETTINGS, strategy=_STRATEGY)  # type: ignore[call-arg]
+            AgentConfig(name="x", description="d", settings=_SETTINGS, strategy=_STRATEGY, tools=[])  # type: ignore[call-arg]
 
     def test_requires_settings(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            AgentConfig(name="x", llm=_LLM, strategy=_STRATEGY)  # type: ignore[call-arg]
+            AgentConfig(name="x", description="d", llm=_LLM, strategy=_STRATEGY, tools=[])  # type: ignore[call-arg]
 
     def test_requires_strategy(self) -> None:
         with pytest.raises((ValidationError, TypeError)):
-            AgentConfig(name="x", llm=_LLM, settings=_SETTINGS)  # type: ignore[call-arg]
+            AgentConfig(name="x", description="d", llm=_LLM, settings=_SETTINGS, tools=[])  # type: ignore[call-arg]
 
     def test_is_frozen(self) -> None:
         cfg = _make_agent_config()

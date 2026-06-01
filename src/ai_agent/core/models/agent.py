@@ -19,13 +19,12 @@ class AgentConfig(BaseModel):
 
     name: str = Field(description="Unique agent name.")
     description: str = Field(description="Human-readable agent description.")
-    system_prompt: str = Field(default="", description="System prompt.")
+    system_prompt: str | None = Field(default=None, description="System prompt.")
     llm: LLM = Field(description="LLM identity.")
     settings: LLMSettings = Field(description="Sampling parameters.")
     strategy: StrategyConfig = Field(description="Reasoning strategy.")
     tools: list[Tool] = Field(
-        default_factory=list,
-        description="Active tools for this agent. Empty list means no tools.",
+        description="Active tools for this agent. Use [] for no tools.",
     )
 
 

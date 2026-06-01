@@ -25,10 +25,6 @@ class ToolError(AgentError):
     """Base class for tool-related failures."""
 
 
-class ToolSchemaError(ToolError):
-    """Raised when a tool's schema is invalid at registration time."""
-
-
 class ToolNotFoundError(ToolError):
     """Raised when a requested tool is not present in the registry."""
 
@@ -80,6 +76,5 @@ __all__ = [
     "ReasoningError",
     "ToolError",
     "ToolNotFoundError",
-    "ToolSchemaError",
     "UserMessageTooLongError",
 ]

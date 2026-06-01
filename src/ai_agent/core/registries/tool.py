@@ -1,45 +1,42 @@
-"""Tool registry mapping identifiers to implementations and schemas."""
+"""Tool registry mapping Tool identities to implementations."""
 
 from __future__ import annotations
 
 from ai_agent.core.exceptions import ToolNotFoundError
-from ai_agent.core.models.tool import Tool, ToolDefinition, ToolSchema
+from ai_agent.core.models.tool import Tool, ToolDefinition
 from ai_agent.core.protocols.tool import ITool
 
 
 class ToolRegistry:
-    """Maps Tool identifiers to implementations and schemas."""
+    """Maps Tool identifiers to ITool implementations."""
 
     def __init__(self) -> None:
-        self._callers: dict[str, ITool] = {}
-        self._schemas: dict[Tool, ToolSchema] = {}
+        self._callers: dict[Tool, ITool] = {}
 
-    def register(self, tool: Tool, schema: ToolSchema, implementation: ITool) -> None:
-        """Register an implementation and schema under a Tool key.
+    def register(self, tool: Tool, implementation: ITool) -> None:
+        """Register an implementation under a Tool key. First registration wins.
 
         Args:
             tool: Tool identifier (type + name).
-            schema: Tool schema exposed to the LLM.
-            implementation: ITool adapter.
+            implementation: ITool instance.
         """
-        self._callers.setdefault(tool.type, implementation)
-        self._schemas.setdefault(tool, schema)
+        self._callers.setdefault(tool, implementation)
 
-    def resolve_implementation(self, type: str) -> ITool:
-        """Return the ITool adapter registered under the given tool type.
+    def resolve_implementation(self, tool: Tool) -> ITool:
+        """Return the ITool implementation registered under the given Tool.
 
         Args:
-            type: Tool type string.
+            tool: Tool identifier.
 
         Raises:
-            ToolNotFoundError: If no implementation is registered for that type.
+            ToolNotFoundError: If no implementation is registered for that tool.
         """
-        try:
-            return self._callers[type]
-        except KeyError:
+        impl = self._callers.get(tool)
+        if impl is None:
             raise ToolNotFoundError(
-                f"No implementation for tool type {type!r}. Registered: {sorted(self._callers)}"
-            ) from None
+                f"No implementation for tool type={tool.type!r} name={tool.name!r}."
+            )
+        return impl
 
     def resolve_definition(self, tool: Tool) -> ToolDefinition:
         """Return a ToolDefinition for the given Tool identity.
@@ -50,13 +47,8 @@ class ToolRegistry:
         Raises:
             ToolNotFoundError: If the tool is not registered.
         """
-        try:
-            schema = self._schemas[tool]
-        except KeyError:
-            raise ToolNotFoundError(
-                f"No schema for tool type={tool.type!r} name={tool.name!r}."
-            ) from None
-        return ToolDefinition(name=tool.name, tool_schema=schema)
+        impl = self.resolve_implementation(tool)
+        return ToolDefinition(name=tool.name, tool_schema=impl.schema)
 
     def resolve_tools(self, type: str) -> list[str]:
         """Return all tool names registered under the given tool type.
@@ -64,9 +56,9 @@ class ToolRegistry:
         Args:
             type: Tool type string.
         """
-        return [t.name for t in self._schemas if t.type == type]
+        return [k.name for k in self._callers if k.type == type]
 
     @property
     def tools(self) -> list[Tool]:
         """All registered Tool identities."""
-        return list(self._schemas)
+        return list(self._callers)

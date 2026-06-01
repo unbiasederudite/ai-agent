@@ -43,7 +43,7 @@ def _make_agent(
     name: str = "default",
     description: str = "Test agent.",
     system_prompt: str | None = None,
-    service: _StubRunService | None = None,
+    run_service: _StubRunService | None = None,
     run_settings: RunSettings = _RUN_SETTINGS,
     base_prompt: str = "",
 ) -> Agent:
@@ -51,7 +51,7 @@ def _make_agent(
         name=name,
         description=description,
         system_prompt=system_prompt,
-        service=service or _StubRunService(),  # type: ignore[arg-type]
+        run_service=run_service or _StubRunService(),  # type: ignore[arg-type]
         run_settings=run_settings,
         base_prompt=base_prompt,
     )
@@ -109,35 +109,42 @@ class TestAgentRun:
     def _messages(self) -> list[Message]:
         return [Message(role=Role.USER, content="hello")]
 
-    def test_system_message_prepended(self) -> None:
+    def test_system_message_prepended_when_prompt_set(self) -> None:
         svc = _StubRunService()
-        agent = _make_agent(system_prompt="be helpful", service=svc)
+        agent = _make_agent(system_prompt="be helpful", run_service=svc)
         agent.run(self._messages(), provider=None, model="m", settings=_SETTINGS, tools=None)
         assert svc.calls[0][0].role == Role.SYSTEM
 
     def test_system_message_content_is_merged_prompt(self) -> None:
         svc = _StubRunService()
-        agent = _make_agent(base_prompt="base", system_prompt="sp", service=svc)
+        agent = _make_agent(base_prompt="base", system_prompt="sp", run_service=svc)
         agent.run(self._messages(), provider=None, model="m", settings=_SETTINGS, tools=None)
         assert svc.calls[0][0].content == "base\n\nsp"
 
     def test_caller_messages_follow_system_message(self) -> None:
         svc = _StubRunService()
-        agent = _make_agent(service=svc)
+        agent = _make_agent(system_prompt="be helpful", run_service=svc)
         agent.run(self._messages(), provider=None, model="m", settings=_SETTINGS, tools=None)
         assert svc.calls[0][1].role == Role.USER
         assert svc.calls[0][1].content == "hello"
 
     def test_total_message_count_is_system_plus_caller(self) -> None:
         svc = _StubRunService()
-        agent = _make_agent(service=svc)
+        agent = _make_agent(system_prompt="be helpful", run_service=svc)
         agent.run(self._messages(), provider=None, model="m", settings=_SETTINGS, tools=None)
         assert len(svc.calls[0]) == 2
+
+    def test_no_system_message_when_prompt_empty(self) -> None:
+        svc = _StubRunService()
+        agent = _make_agent(base_prompt="", system_prompt=None, run_service=svc)
+        agent.run(self._messages(), provider=None, model="m", settings=_SETTINGS, tools=None)
+        assert len(svc.calls[0]) == 1
+        assert svc.calls[0][0].role == Role.USER
 
     def test_returns_service_run_result(self) -> None:
         expected = _run_result(output="pong")
         svc = _StubRunService(result=expected)
-        agent = _make_agent(service=svc)
+        agent = _make_agent(run_service=svc)
         result = agent.run(
             self._messages(), provider=None, model="m", settings=_SETTINGS, tools=None
         )

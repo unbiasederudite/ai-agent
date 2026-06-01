@@ -17,7 +17,6 @@ from ai_agent.core.exceptions import (
     ReasoningError,
     ToolError,
     ToolNotFoundError,
-    ToolSchemaError,
     UserMessageTooLongError,
 )
 
@@ -45,9 +44,6 @@ class TestAgentErrorHierarchy:
 
     def test_agent_error_is_exception(self) -> None:
         assert issubclass(AgentError, Exception)
-
-    def test_tool_schema_error_is_tool_error(self) -> None:
-        assert issubclass(ToolSchemaError, ToolError)
 
     def test_tool_not_found_error_is_tool_error(self) -> None:
         assert issubclass(ToolNotFoundError, ToolError)

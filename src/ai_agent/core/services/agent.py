@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Final
+
 from ai_agent.core.models.llm import LLMSettings
 from ai_agent.core.models.message import Message, Role
 from ai_agent.core.models.run import RunResult, RunSettings
@@ -10,6 +12,7 @@ from ai_agent.core.protocols.llm import ILLMProvider
 from ai_agent.core.services.run import RunService
 
 _BASE_PROMPT: str = """
+You are a helpful AI assistant.
 """
 
 
@@ -21,15 +24,15 @@ class Agent:
         name: str,
         description: str,
         system_prompt: str | None,
-        service: RunService,
+        run_service: RunService,
         run_settings: RunSettings,
         base_prompt: str = _BASE_PROMPT,
     ) -> None:
-        self._name = name
-        self._description = description
-        self._system_prompt = "\n\n".join(p for p in (base_prompt, system_prompt) if p)
-        self._service = service
-        self._run_settings = run_settings
+        self._name: Final = name
+        self._description: Final = description
+        self._system_prompt: Final = "\n\n".join(p for p in (base_prompt, system_prompt) if p)
+        self._run_service: Final = run_service
+        self._run_settings: Final = run_settings
 
     @property
     def name(self) -> str:
@@ -51,5 +54,6 @@ class Agent:
         settings: LLMSettings,
         tools: list[ToolDefinition] | None,
     ) -> RunResult:
-        messages = [Message(role=Role.SYSTEM, content=self._system_prompt), *messages]
-        return self._service.run(messages, provider, model, settings, tools)
+        if self._system_prompt:
+            messages = [Message(role=Role.SYSTEM, content=self._system_prompt), *messages]
+        return self._run_service.run(messages, provider, model, settings, tools)

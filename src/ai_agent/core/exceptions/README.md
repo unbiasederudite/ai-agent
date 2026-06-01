@@ -11,7 +11,6 @@ Platform exception hierarchy. All exceptions inherit from `AgentError`.
   - `LoopDetectedError` — reasoning exceeded the turn limit.
   - `ContextBudgetError` — session history too large for the context window.
   - `ToolError` — base class for tool-related failures.
-  - `ToolSchemaError` — invalid tool schema at registration time.
   - `ToolNotFoundError` — requested tool not present in the registry.
   - `AgentNotFoundError` — requested agent not present in the registry.
   - `UserMessageTooLongError` — user message exceeds the configured character limit.
