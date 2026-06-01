@@ -74,51 +74,47 @@ All exceptions are subclasses of `AgentError`. `core/` raises only `AgentError` 
 
 ## Extension Guide
 
+`ConversationFactory` is the single wiring point for all extension types. It takes three implementation dicts at construction — one per extension axis — and builds the fully wired `Conversation` from a `ConversationConfig`.
+
 ### Add a new LLM provider
 
 `ILLMProvider` already exists — just implement it.
 
-1. Create `XAdapter` in `adapters/` implementing `ILLMProvider`.
-2. Add the provider and its models to the LLM registry section of the JSON config.
-3. Wire the adapter instance in the `cli/` dependency-construction block.
-
-No changes to any existing strategy, service, or protocol.
-
-### Add a new provider type
-
-Only needed when the new provider is not an LLM.
-
-1. Define `IXProvider(Protocol)` in `core/protocols/` with the methods strategies will call.
-2. Add an `XConfig` model to `core/models/config.py`.
-3. Create `XAdapter` in `adapters/` implementing `IXProvider`.
-4. Wire the adapter instance in the `cli/` dependency-construction block.
-
-No changes to any existing strategy or service.
+1. Create `XProvider` in `adapters/` implementing `ILLMProvider` — needs `complete(request: LLMRequest) -> LLMResponse` and `context_window(model: str) -> int`.
+2. Pass an instance to `ConversationFactory(llm_implementations={"provider_name": XProvider(), ...}, ...)`.
+3. Add the provider and its models to the `llm_registry` section of the JSON config.
 
 ### Add a new strategy
 
 1. Create `XStrategy` in `core/strategies/` subclassing `BaseStrategy`.
-2. Subclass `StrategyConfig` with any extra fields; use `type` as the discriminator.
-3. Add the class to the `implementations` dict passed to `StrategyFactory` in `cli/`.
-
-No changes to services or adapters.
+2. Implement the abstract `step(state, request, provider) -> StepResult`. The `tool_service` is injected automatically by `StrategyFactory` — access it via `self._tool_service`.
+3. Optionally subclass `StrategyConfig` with extra fields; use `type` as the discriminator.
+4. Pass the class to `ConversationFactory(..., strategy_implementations={"type_name": XStrategy})`.
+5. Reference `type_name` in each agent's `strategy` section of the JSON config.
 
 ### Add a new tool
 
 1. Create `XTool` in `core/tools/` subclassing `BaseTool`.
-2. Subclass `ToolConfig` with any extra fields if the tool needs additional configuration.
-3. Add the class to the `implementations` dict passed to `ToolFactory` in `cli/`.
-4. Declare it in the tool registry section of the JSON config.
+2. Implement `@property schema -> ToolSchema` (the schema sent to the LLM) and `execute(arguments) -> ToolResponse`.
+3. Optionally subclass `ToolConfig` with extra fields if the tool needs configuration beyond `type` and `name`.
+4. Pass the class to `ConversationFactory(..., tool_implementations={"type_name": XTool})`.
+5. Declare each tool instance in the `tool_registry` section of the JSON config and reference it in the agent's `tools` list.
 
-No changes to strategies or services.
+### Add a new provider type
+
+Only needed when the new provider is not an LLM. Requires modifying `ConversationFactory`.
+
+1. Define `IXProvider(Protocol)` in `core/protocols/` with the methods strategies will call.
+2. Add an `XConfig` model to `core/models/config.py` and a corresponding field to `ConversationConfig`.
+3. Add a `x_implementations: dict[str, IXProvider]` parameter to `ConversationFactory.__init__` and a `_build_x_registry` method.
+4. Create `XAdapter` in `adapters/` implementing `IXProvider`.
+5. Pass the adapter to `ConversationFactory` in `cli/`.
 
 ### Add a new runtime integration
 
-1. Create a folder `adapters/<runtime>/`.
-2. Implement the runtime's entry point, translating its request/response format to `AgentState` and back.
-3. Call the appropriate `XService` method — the integration owns nothing else.
-
-No changes to `core/`.
+1. Create `adapters/<runtime>/` with an entry point that owns the request/response lifecycle.
+2. Translate the runtime's input to a `user_message: str` and call `Conversation.run()`.
+3. Translate `RunResult` back to the runtime's response format.
 
 ---
 
