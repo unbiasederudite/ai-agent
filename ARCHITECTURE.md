@@ -80,7 +80,7 @@ All exceptions are subclasses of `AgentError`. `core/` raises only `AgentError` 
 
 `ILLMProvider` already exists — just implement it.
 
-1. Create `XProvider` in `adapters/` implementing `ILLMProvider` — needs `complete(request: LLMRequest) -> LLMResponse` and `context_window(model: str) -> int`.
+1. Create `XProvider` in `adapters/` implementing `ILLMProvider` — needs `complete(request: LLMRequest) -> LLMResponse`.
 2. Pass an instance to `ConversationFactory(llm_implementations={"provider_name": XProvider(), ...}, ...)`.
 3. Add the provider and its models to the `llm_registry` section of the JSON config.
 
