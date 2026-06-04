@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from ai_agent.core.exceptions import ProviderNotFoundError
+import litellm
+
+from ai_agent.core.exceptions import ConfigError, ProviderNotFoundError
 from ai_agent.core.models.llm import LLM, LLMSettings
 from ai_agent.core.protocols.llm import ILLMProvider
 
@@ -66,6 +68,35 @@ class LLMRegistry:
             provider: Provider name string.
         """
         return [llm.model for llm in self._settings if llm.provider == provider]
+
+    def resolve_context_window(self, llm: LLM) -> int:
+        """Return the context window size for the given LLM via LiteLLM.
+
+        Args:
+            llm: LLM identifier.
+
+        Raises:
+            ProviderNotFoundError: If the LLM is not registered.
+            ConfigError: If LiteLLM cannot determine the context window.
+        """
+        if llm not in self._settings:
+            registered = [(k.provider, k.model) for k in self._settings]
+            raise ProviderNotFoundError(
+                f"Unknown LLM provider={llm.provider!r} model={llm.model!r}. "
+                f"Registered: {registered}"
+            )
+        try:
+            info = litellm.get_model_info(f"{llm.provider}/{llm.model}")
+        except Exception as exc:
+            raise ConfigError(
+                f"Cannot determine context window for {llm.provider}/{llm.model}: {exc}"
+            ) from exc
+        max_tokens = info.get("max_input_tokens")
+        if not max_tokens:
+            raise ConfigError(
+                f"LiteLLM returned no max_input_tokens for {llm.provider}/{llm.model}"
+            )
+        return int(max_tokens)
 
     @property
     def llms(self) -> list[LLM]:

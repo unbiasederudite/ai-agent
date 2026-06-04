@@ -73,9 +73,8 @@ class ConversationFactory:
         # 5. default run settings + context budget
         default_agent = agent_registry.resolve_agent(config.default_agent)
         run_settings = default_agent.run_settings
-        provider = llm_registry.resolve_implementation(run_settings.llm.provider)
         context_budget = ContextBudget(
-            context_window=provider.context_window(run_settings.llm.model),
+            context_window=llm_registry.resolve_context_window(run_settings.llm),
             compaction_threshold=config.compaction.threshold,
         )
 

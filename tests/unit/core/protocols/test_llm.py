@@ -30,9 +30,6 @@ class _StubLLMProvider:
             usage=LLMUsage(input_tokens=1, output_tokens=1),
         )
 
-    def context_window(self, model: str) -> int:
-        return 128_000
-
 
 def _accepts_llm_provider(p: ILLMProvider) -> str:
     return "ok"
@@ -58,24 +55,10 @@ class TestILLMProvider:
         response = provider.complete(request)
         assert response.message.role == Role.ASSISTANT
 
-    def test_context_window_returns_positive_int(self) -> None:
-        provider = _StubLLMProvider()
-        assert isinstance(provider.context_window("gpt-4o"), int)
-        assert provider.context_window("gpt-4o") >= 1
-
     def test_class_missing_complete_fails_isinstance(self) -> None:
         """A class without complete() does not satisfy ILLMProvider."""
 
         class _NoComplete:
-            def context_window(self, model: str) -> int:
-                return 128_000
+            pass
 
         assert not isinstance(_NoComplete(), ILLMProvider)
-
-    def test_class_missing_context_window_fails_isinstance(self) -> None:
-        """A class without context_window() does not satisfy ILLMProvider."""
-
-        class _NoContextWindow:
-            def complete(self, request: LLMRequest) -> LLMResponse: ...  # type: ignore[return-value]
-
-        assert not isinstance(_NoContextWindow(), ILLMProvider)

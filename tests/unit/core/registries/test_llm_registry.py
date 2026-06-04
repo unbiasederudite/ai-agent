@@ -31,9 +31,6 @@ class _StubProvider:
             usage=LLMUsage(input_tokens=1, output_tokens=1),
         )
 
-    def context_window(self, model: str) -> int:
-        return 128_000
-
 
 class TestLLMRegistryRegister:
     def test_register_valid_llm(self) -> None:

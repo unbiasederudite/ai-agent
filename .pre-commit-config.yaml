@@ -15,3 +15,5 @@ repos:
         additional_dependencies:
           - pydantic>=2.0
           - typer>=0.12
+          - litellm>=1.0
+          - openai>=2.0

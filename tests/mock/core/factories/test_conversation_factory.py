@@ -1,12 +1,9 @@
-"""Unit tests for ConversationFactory."""
+"""Mock tests for ConversationFactory.build() — requires LiteLLM patching."""
 
-import pytest
 from unittest.mock import patch
 
-from ai_agent.core.services.conversation import Conversation
-from ai_agent.core.exceptions import ConfigError
 from ai_agent.core.factories.conversation import ConversationFactory
-from ai_agent.core.models.agent import AgentState, StepResult
+from ai_agent.core.models.agent import AgentConfig, AgentState, StepResult
 from ai_agent.core.models.config import (
     CompactionConfig,
     ConversationConfig,
@@ -25,18 +22,16 @@ from ai_agent.core.models.message import Message, Role
 from ai_agent.core.models.strategy import StrategyConfig
 from ai_agent.core.models.tool import Tool, ToolConfig, ToolResponse, ToolSchema
 from ai_agent.core.protocols.llm import ILLMProvider
+from ai_agent.core.services.conversation import Conversation
 from ai_agent.core.strategies.base import BaseStrategy
 from ai_agent.core.tools.base import BaseTool
 
-
-# ---------------------------------------------------------------------------
-# Stubs
-# ---------------------------------------------------------------------------
 
 _PROVIDER = "test"
 _MODEL = "test-model"
 _SETTINGS = LLMSettings(temperature=0.7, max_tokens=4096)
 _LLM = LLM(provider=_PROVIDER, model=_MODEL)
+_CONTEXT_WINDOW = 128_000
 
 
 class _StubProvider:
@@ -65,11 +60,6 @@ class _StubTool(BaseTool):
         return ToolResponse(content="stub")
 
 
-# ---------------------------------------------------------------------------
-# Config helpers
-# ---------------------------------------------------------------------------
-
-
 def _make_config(**overrides: object) -> ConversationConfig:
     defaults: dict[str, object] = {
         "llm_registry": [
@@ -89,9 +79,7 @@ def _make_config(**overrides: object) -> ConversationConfig:
     return ConversationConfig(**{**defaults, **overrides})  # type: ignore[arg-type]
 
 
-def _make_agent_config(name: str = "default") -> object:
-    from ai_agent.core.models.agent import AgentConfig
-
+def _make_agent_config(name: str = "default") -> AgentConfig:
     return AgentConfig(
         name=name,
         description="Test agent.",
@@ -105,52 +93,31 @@ def _make_agent_config(name: str = "default") -> object:
 def _factory(
     providers: dict[str, object] | None = None,
     tools: dict[str, type[BaseTool]] | None = None,
-    strategies: dict[str, type[BaseStrategy]] | None = None,
 ) -> ConversationFactory:
     return ConversationFactory(
         llm_implementations=providers or {_PROVIDER: _StubProvider()},  # type: ignore[arg-type]
         tool_implementations=tools or {},
-        strategy_implementations=strategies or {"stub": _StubStrategy},
+        strategy_implementations={"stub": _StubStrategy},
     )
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 
 def _litellm_patch() -> patch:  # type: ignore[type-arg]
     return patch(
         "ai_agent.core.registries.llm.litellm.get_model_info",
-        return_value={"max_input_tokens": 128_000},
+        return_value={"max_input_tokens": _CONTEXT_WINDOW},
     )
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 
 class TestConversationFactoryBuild:
     def test_returns_conversation_instance(self) -> None:
         with _litellm_patch():
-            assert isinstance(_factory().build(_make_config()), Conversation)
-
-    def test_unknown_provider_raises_config_error(self) -> None:
-        with pytest.raises(ConfigError, match=_PROVIDER):
-            _factory(providers={"other": _StubProvider()}).build(_make_config())
-
-    def test_unknown_tool_type_raises_config_error(self) -> None:
-        config = _make_config(
-            tool_registry=[ToolConfig(type="unknown", name="x")],
-        )
-        with pytest.raises(ConfigError, match="unknown"):
-            _factory().build(config)
+            result = _factory().build(_make_config())
+        assert isinstance(result, Conversation)
 
     def test_context_budget_uses_litellm_context_window(self) -> None:
         with _litellm_patch():
             conv = _factory().build(_make_config())
-        assert conv.context_budget.context_window == 128_000
+        assert conv.context_budget.context_window == _CONTEXT_WINDOW
 
     def test_context_budget_uses_compaction_threshold(self) -> None:
         with _litellm_patch():

@@ -1,6 +1,7 @@
 """Unit tests for Conversation."""
 
 import pytest
+from unittest.mock import patch
 
 from ai_agent.core.services.conversation import Conversation
 from ai_agent.core.exceptions import ContextWindowExceededError, UserMessageTooLongError
@@ -399,27 +400,38 @@ def _make_conversation_two_agents() -> Conversation:
     )
 
 
+def _litellm_patch() -> patch:  # type: ignore[type-arg]
+    return patch(
+        "ai_agent.core.registries.llm.litellm.get_model_info",
+        return_value={"max_input_tokens": 128_000},
+    )
+
+
 class TestStickyRecalibration:
     def test_sticky_agent_recalibrates_budget(self) -> None:
         conv = _make_conversation_two_agents()
         assert conv.context_budget.context_window == 1000
-        conv.sticky("agent", _AGENT_B)
+        with _litellm_patch():
+            conv.sticky("agent", _AGENT_B)
         assert conv.context_budget.context_window == 128_000
 
     def test_sticky_agent_updates_run_settings(self) -> None:
         conv = _make_conversation_two_agents()
-        conv.sticky("agent", _AGENT_B)
+        with _litellm_patch():
+            conv.sticky("agent", _AGENT_B)
         assert conv.active_agent.run_settings.llm.model == "other-model"
 
     def test_sticky_llm_recalibrates_budget(self) -> None:
         conv = _make_conversation_two_agents()
         assert conv.context_budget.context_window == 1000
-        conv.sticky("llm", _LLM_B)
+        with _litellm_patch():
+            conv.sticky("llm", _LLM_B)
         assert conv.context_budget.context_window == 128_000
 
     def test_sticky_llm_updates_run_settings(self) -> None:
         conv = _make_conversation_two_agents()
-        conv.sticky("llm", _LLM_B)
+        with _litellm_patch():
+            conv.sticky("llm", _LLM_B)
         assert conv._run_settings.llm.model == "other-model"  # type: ignore[attr-defined]
 
     def test_sticky_other_field_does_not_recalibrate(self) -> None:

@@ -19,14 +19,3 @@ class ILLMProvider(Protocol):
             A validated LLMResponse.
         """
         ...
-
-    def context_window(self, model: str) -> int:
-        """Return the maximum number of input tokens the given model accepts.
-
-        Args:
-            model: Model identifier string.
-
-        Returns:
-            A positive integer representing the model's context window in tokens.
-        """
-        ...

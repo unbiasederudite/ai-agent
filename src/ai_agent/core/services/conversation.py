@@ -162,18 +162,16 @@ class Conversation:
         """
         if field == "agent":
             self._run_settings = self._agent_registry.resolve_agent(value).run_settings
-            provider = self._llm_registry.resolve_implementation(self._run_settings.llm.provider)
             self._context_budget = self._context_budget.recalibrate(
-                context_window=provider.context_window(self._run_settings.llm.model)
+                context_window=self._llm_registry.resolve_context_window(self._run_settings.llm)
             )
         elif field == "llm":
             new_settings = self._llm_registry.resolve_settings(value)
             self._run_settings = self._run_settings.model_copy(
                 update={"llm": value, "settings": new_settings}
             )
-            provider = self._llm_registry.resolve_implementation(value.provider)
             self._context_budget = self._context_budget.recalibrate(
-                context_window=provider.context_window(value.model)
+                context_window=self._llm_registry.resolve_context_window(value)
             )
         else:
             self._run_settings = self._run_settings.model_copy(update={field: value})

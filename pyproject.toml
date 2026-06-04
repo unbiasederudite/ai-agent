@@ -5,7 +5,10 @@ description = "Modular AI agent platform — pure Python core with plug-in frame
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "litellm>=1.0",
+    "openai>=2.41.0",
     "pydantic>=2.0",
+    "python-dotenv>=1.2.2",
     "typer>=0.12",
 ]
 
