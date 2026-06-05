@@ -1,9 +1,9 @@
-"""ToolFactory: resolves a ToolConfig to a concrete ITool."""
+"""ToolFactory: resolves a BaseToolConfig to a concrete ITool."""
 
 from typing import Final
 
 from ai_agent.core.exceptions import ConfigError
-from ai_agent.core.models.tool import ToolConfig
+from ai_agent.core.models.tool import BaseToolConfig
 from ai_agent.core.protocols.tool import ITool
 from ai_agent.core.tools.base import BaseTool
 
@@ -14,7 +14,7 @@ class ToolFactory:
     def __init__(self, implementations: dict[str, type[BaseTool]]) -> None:
         self._implementations: Final = implementations
 
-    def build(self, config: ToolConfig) -> ITool:
+    def build(self, config: BaseToolConfig) -> ITool:
         """Instantiate a tool from its config.
 
         Args:

@@ -1,9 +1,9 @@
-"""StrategyFactory: resolves a StrategyConfig to a concrete IReasoningStrategy."""
+"""StrategyFactory: resolves a BaseStrategyConfig to a concrete IReasoningStrategy."""
 
 from typing import Final
 
 from ai_agent.core.exceptions import ConfigError
-from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.strategy import BaseStrategyConfig
 from ai_agent.core.protocols.strategy import IReasoningStrategy
 from ai_agent.core.services.tool import ToolService
 from ai_agent.core.strategies.base import BaseStrategy
@@ -20,7 +20,7 @@ class StrategyFactory:
         self._implementations: Final = implementations
         self._tool_service: Final = tool_service
 
-    def build(self, config: StrategyConfig) -> IReasoningStrategy:
+    def build(self, config: BaseStrategyConfig) -> IReasoningStrategy:
         """Instantiate a strategy from its config.
 
         Args:

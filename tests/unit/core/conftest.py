@@ -10,7 +10,7 @@ from ai_agent.core.models.config import (
     LLMProviderConfig,
 )
 from ai_agent.core.models.llm import LLM, LLMSettings
-from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.strategy import ReActStrategyConfig
 
 
 @pytest.fixture()
@@ -27,7 +27,7 @@ def agent_config(llm_config: LLM) -> AgentConfig:
         description="Default test agent.",
         llm=llm_config,
         settings=LLMSettings(temperature=0.7, max_tokens=4096),
-        strategy=StrategyConfig(type="cot"),
+        strategy=ReActStrategyConfig(),
         tools=[],
     )
 

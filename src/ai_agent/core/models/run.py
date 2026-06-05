@@ -5,6 +5,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from ai_agent.core.models.llm import LLM, LLMSettings, LLMUsage
+from ai_agent.core.models.message import Message
 from ai_agent.core.models.tool import Tool
 
 
@@ -31,3 +32,6 @@ class RunResult(BaseModel):
     turns: int = Field(description="Number of reasoning turns executed.", ge=0)
     billed_usage: LLMUsage = Field(description="Accumulated token counts across all turns.")
     context_usage: LLMUsage = Field(description="Token counts for the final turn.")
+    messages: list[Message] = Field(
+        description="Full message trace including all tool calls and results."
+    )

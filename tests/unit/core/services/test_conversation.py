@@ -29,7 +29,7 @@ _RUN_SETTINGS = RunSettings(agent=_AGENT, llm=_LLM, settings=_SETTINGS)
 
 def _run_result(output: str = "reply", inp: int = 10, out: int = 5) -> RunResult:
     usage = LLMUsage(input_tokens=inp, output_tokens=out)
-    return RunResult(output=output, turns=1, billed_usage=usage, context_usage=usage)
+    return RunResult(output=output, turns=1, billed_usage=usage, context_usage=usage, messages=[])
 
 
 class _StubAgent:
@@ -59,7 +59,8 @@ class _StubAgent:
         if self._raise_once and self._raises is not None:
             self._raise_once = False
             raise self._raises("context exceeded")
-        return self._result
+        reply = Message(role=Role.ASSISTANT, content=self._result.output)
+        return self._result.model_copy(update={"messages": [*messages, reply]})
 
 
 class _StubProvider:
@@ -69,9 +70,6 @@ class _StubProvider:
             finish_reason=FinishReason.STOP,
             usage=LLMUsage(input_tokens=5, output_tokens=3),
         )
-
-    def context_window(self, model: str) -> int:
-        return 128_000
 
 
 class _StubCompaction:
@@ -376,7 +374,9 @@ class _StubAgentB:
         settings: LLMSettings,
         tools: list[ToolDefinition] | None,
     ) -> RunResult:
-        return _run_result()
+        result = _run_result()
+        reply = Message(role=Role.ASSISTANT, content=result.output)
+        return result.model_copy(update={"messages": [*messages, reply]})
 
 
 def _make_conversation_two_agents() -> Conversation:

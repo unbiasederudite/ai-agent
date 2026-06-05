@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -13,17 +15,22 @@ class Strategy(BaseModel):
     type: str = Field(description="Strategy type identifier.")
 
 
-class StrategyConfig(Strategy):
-    """Base settings for all reasoning strategy types.
-
-    Concrete settings subclass this with a Literal 'type' field and add their own fields.
-    When multiple types exist, replace this class with a discriminated union:
-
-        StrategyConfig = Annotated[Union[FooStrategyConfig, BarStrategyConfig], Field(discriminator="type")]
-    """
+class BaseStrategyConfig(Strategy):
+    """Base settings for all reasoning strategy types."""
 
     max_turns: int = Field(
         default=10,
         description="Maximum reasoning turns before LoopDetectedError is raised.",
         ge=1,
     )
+
+
+class ReActStrategyConfig(BaseStrategyConfig):
+    """Configuration for the ReAct (Reason + Act) reasoning strategy."""
+
+    type: Literal["react"] = "react"
+
+
+# Typed union of all concrete strategy config types. Extend when adding strategies:
+#   StrategyConfig = Annotated[Union[ReActStrategyConfig, FooStrategyConfig], Field(discriminator="type")]
+StrategyConfig = ReActStrategyConfig

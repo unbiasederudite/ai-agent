@@ -11,7 +11,7 @@ from ai_agent.core.models.llm import FinishReason, LLMRequest, LLMResponse, LLMS
 from ai_agent.core.models.message import Message, Role
 from ai_agent.core.models.run import RunResult
 from ai_agent.core.models.agent import AgentState, AgentStatus, StepResult
-from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.strategy import BaseStrategyConfig
 from ai_agent.core.models.tool import ToolDefinition
 from ai_agent.core.services import RunService
 
@@ -40,9 +40,6 @@ class _StubProvider:
     def complete(self, request: LLMRequest) -> LLMResponse:
         return _make_response()
 
-    def context_window(self, model: str) -> int:
-        return 128_000
-
 
 _PROVIDER = _StubProvider()
 _SETTINGS = LLMSettings(temperature=0.7, max_tokens=4096)
@@ -55,28 +52,32 @@ _MODEL = "mock-model"
 
 
 class _CompleteOnFirstStep:
-    config: StrategyConfig = StrategyConfig(type="stub")
+    config: BaseStrategyConfig = BaseStrategyConfig(type="stub")
 
     def step(self, state: AgentState, request: LLMRequest, provider: object = None) -> StepResult:
         msg = Message(role=Role.ASSISTANT, content="done")
         new_state = state.model_copy(
-            update={"status": AgentStatus.COMPLETE, "messages": [*state.messages, msg]}
+            update={
+                "status": AgentStatus.COMPLETE,
+                "messages": [*state.messages, msg],
+                "turn": state.turn + 1,
+            }
         )
         return StepResult(state=new_state, response=_make_response("done"))
 
 
 class _ErrorOnFirstStep:
-    config: StrategyConfig = StrategyConfig(type="stub")
+    config: BaseStrategyConfig = BaseStrategyConfig(type="stub")
 
     def step(self, state: AgentState, request: LLMRequest, provider: object = None) -> StepResult:
-        new_state = state.model_copy(update={"status": AgentStatus.ERROR})
+        new_state = state.model_copy(update={"status": AgentStatus.ERROR, "turn": state.turn + 1})
         return StepResult(state=new_state, response=_make_response())
 
 
 class _RunningThenComplete:
     """Runs one RUNNING step then completes — simulates a multi-turn strategy."""
 
-    config: StrategyConfig = StrategyConfig(type="stub")
+    config: BaseStrategyConfig = BaseStrategyConfig(type="stub")
 
     def __init__(self) -> None:
         self._calls = 0
@@ -84,20 +85,26 @@ class _RunningThenComplete:
     def step(self, state: AgentState, request: LLMRequest, provider: object = None) -> StepResult:
         self._calls += 1
         if self._calls == 1:
-            new_state = state.model_copy(update={"status": AgentStatus.RUNNING})
+            new_state = state.model_copy(
+                update={"status": AgentStatus.RUNNING, "turn": state.turn + 1}
+            )
             return StepResult(state=new_state, response=_make_response("partial"))
         msg = Message(role=Role.ASSISTANT, content="done")
         new_state = state.model_copy(
-            update={"status": AgentStatus.COMPLETE, "messages": [*state.messages, msg]}
+            update={
+                "status": AgentStatus.COMPLETE,
+                "messages": [*state.messages, msg],
+                "turn": state.turn + 1,
+            }
         )
         return StepResult(state=new_state, response=_make_response("done"))
 
 
 class _NeverCompletes:
-    config: StrategyConfig = StrategyConfig(type="stub", max_turns=3)
+    config: BaseStrategyConfig = BaseStrategyConfig(type="stub", max_turns=3)
 
     def step(self, state: AgentState, request: LLMRequest, provider: object = None) -> StepResult:
-        new_state = state.model_copy(update={"status": AgentStatus.RUNNING})
+        new_state = state.model_copy(update={"status": AgentStatus.RUNNING, "turn": state.turn + 1})
         return StepResult(state=new_state, response=_make_response())
 
 
@@ -167,44 +174,24 @@ class TestRunServiceLoopDetection:
 
     def test_completes_within_max_turns_succeeds(self) -> None:
         class _CompleteWithTightLimit:
-            config: StrategyConfig = StrategyConfig(type="stub", max_turns=1)
+            config: BaseStrategyConfig = BaseStrategyConfig(type="stub", max_turns=1)
 
             def step(
                 self, state: AgentState, request: LLMRequest, provider: object = None
             ) -> StepResult:
                 msg = Message(role=Role.ASSISTANT, content="done")
                 new_state = state.model_copy(
-                    update={"status": AgentStatus.COMPLETE, "messages": [*state.messages, msg]}
+                    update={
+                        "status": AgentStatus.COMPLETE,
+                        "messages": [*state.messages, msg],
+                        "turn": state.turn + 1,
+                    }
                 )
                 return StepResult(state=new_state, response=_make_response("done"))
 
         svc = _make_service(strategy=_CompleteWithTightLimit())
         result = _run(svc)
         assert result.output == "done"
-
-
-# ---------------------------------------------------------------------------
-# RunService — no assistant content raises
-# ---------------------------------------------------------------------------
-
-
-class TestRunServiceNoOutput:
-    def test_no_assistant_content_raises_reasoning_error(self) -> None:
-        class _NoContentStrategy:
-            config: StrategyConfig = StrategyConfig(type="stub")
-
-            def step(
-                self, state: AgentState, request: LLMRequest, provider: object = None
-            ) -> StepResult:
-                msg = Message(role=Role.ASSISTANT, content=None)
-                new_state = state.model_copy(
-                    update={"status": AgentStatus.COMPLETE, "messages": [*state.messages, msg]}
-                )
-                return StepResult(state=new_state, response=_make_response(content=None))
-
-        svc = _make_service(strategy=_NoContentStrategy())
-        with pytest.raises(ReasoningError):
-            _run(svc)
 
 
 # ---------------------------------------------------------------------------

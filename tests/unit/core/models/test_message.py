@@ -2,7 +2,7 @@
 
 import pytest
 
-from ai_agent.core.models.message import Message, Role
+from ai_agent.core.models.message import Message, Role, append_system, prepend_system, strip_system
 from ai_agent.core.models.tool import ToolCall
 
 
@@ -78,3 +78,89 @@ class TestMessage:
         assert msg.role == Role.TOOL
         assert msg.content == "42"
         assert msg.tool_call_id == "call_1"
+
+
+def _sys(content: str) -> Message:
+    return Message(role=Role.SYSTEM, content=content)
+
+
+def _user(content: str = "hello") -> Message:
+    return Message(role=Role.USER, content=content)
+
+
+class TestStripSystem:
+    def test_removes_leading_system(self) -> None:
+        result = strip_system([_sys("s"), _user()])
+        assert result[0].role == Role.USER
+
+    def test_returns_tail_unchanged(self) -> None:
+        user = _user()
+        result = strip_system([_sys("s"), user])
+        assert result[0] is user
+
+    def test_no_system_returns_list_unchanged(self) -> None:
+        msgs = [_user(), _user("bye")]
+        assert strip_system(msgs) == msgs
+
+    def test_empty_list_returns_empty(self) -> None:
+        assert strip_system([]) == []
+
+    def test_returns_new_list(self) -> None:
+        msgs = [_user()]
+        assert strip_system(msgs) is not msgs
+
+
+class TestPrependSystem:
+    def test_creates_system_when_absent(self) -> None:
+        result = prepend_system([_user()], "identity")
+        assert result[0].role == Role.SYSTEM
+        assert result[0].content == "identity"
+
+    def test_user_message_follows_created_system(self) -> None:
+        result = prepend_system([_user()], "identity")
+        assert result[1].role == Role.USER
+
+    def test_merges_before_existing_system(self) -> None:
+        result = prepend_system([_sys("summary"), _user()], "identity")
+        assert result[0].content == "identity\n\nsummary"
+
+    def test_existing_system_only_one_after_merge(self) -> None:
+        result = prepend_system([_sys("summary"), _user()], "identity")
+        assert sum(1 for m in result if m.role == Role.SYSTEM) == 1
+
+    def test_empty_existing_content_uses_new_content_only(self) -> None:
+        result = prepend_system([_sys(""), _user()], "identity")
+        assert result[0].content == "identity"
+
+    def test_none_existing_content_uses_new_content_only(self) -> None:
+        sys_msg = Message(role=Role.SYSTEM, content=None)
+        result = prepend_system([sys_msg, _user()], "identity")
+        assert result[0].content == "identity"
+
+
+class TestAppendSystem:
+    def test_creates_system_when_absent(self) -> None:
+        result = append_system([_user()], "strategy")
+        assert result[0].role == Role.SYSTEM
+        assert result[0].content == "strategy"
+
+    def test_user_message_follows_created_system(self) -> None:
+        result = append_system([_user()], "strategy")
+        assert result[1].role == Role.USER
+
+    def test_merges_after_existing_system(self) -> None:
+        result = append_system([_sys("identity"), _user()], "strategy")
+        assert result[0].content == "identity\n\nstrategy"
+
+    def test_existing_system_only_one_after_merge(self) -> None:
+        result = append_system([_sys("identity"), _user()], "strategy")
+        assert sum(1 for m in result if m.role == Role.SYSTEM) == 1
+
+    def test_empty_existing_content_uses_new_content_only(self) -> None:
+        result = append_system([_sys(""), _user()], "strategy")
+        assert result[0].content == "strategy"
+
+    def test_none_existing_content_uses_new_content_only(self) -> None:
+        sys_msg = Message(role=Role.SYSTEM, content=None)
+        result = append_system([sys_msg, _user()], "strategy")
+        assert result[0].content == "strategy"

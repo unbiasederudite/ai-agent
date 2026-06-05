@@ -31,9 +31,11 @@ _RUN_SETTINGS_B = RunSettings(agent=_AGENT_B, llm=_LLM_B, settings=_SETTINGS)
 _CONTEXT_WINDOW = 128_000
 
 
-def _run_result() -> RunResult:
+def _run_result(messages: list[Message] | None = None) -> RunResult:
     usage = LLMUsage(input_tokens=10, output_tokens=5)
-    return RunResult(output="reply", turns=1, billed_usage=usage, context_usage=usage)
+    return RunResult(
+        output="reply", turns=1, billed_usage=usage, context_usage=usage, messages=messages or []
+    )
 
 
 class _StubProvider:
@@ -60,7 +62,8 @@ class _StubAgent:
         settings: LLMSettings,
         tools: list[ToolDefinition] | None,
     ) -> RunResult:
-        return _run_result()
+        reply = Message(role=Role.ASSISTANT, content="reply")
+        return _run_result(messages=[*messages, reply])
 
 
 class _StubAgentB:
@@ -76,7 +79,8 @@ class _StubAgentB:
         settings: LLMSettings,
         tools: list[ToolDefinition] | None,
     ) -> RunResult:
-        return _run_result()
+        reply = Message(role=Role.ASSISTANT, content="reply")
+        return _run_result(messages=[*messages, reply])
 
 
 class _StubCompaction:

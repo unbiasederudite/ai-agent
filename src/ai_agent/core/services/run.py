@@ -49,7 +49,7 @@ class RunService:
         current = AgentState(messages=messages)
         billed_input_tokens = 0
         billed_output_tokens = 0
-        output: str | None = None
+        output: str | None
         last_usage = LLMUsage(input_tokens=0, output_tokens=0)
 
         while True:
@@ -66,20 +66,16 @@ class RunService:
             billed_input_tokens += result.response.usage.input_tokens
             billed_output_tokens += result.response.usage.output_tokens
             last_usage = result.response.usage
+            current = result.state
 
-            if result.state.status == AgentStatus.COMPLETE:
-                output = result.response.message.content
-                current = result.state.model_copy(update={"turn": result.state.turn + 1})
+            if current.status == AgentStatus.COMPLETE:
+                output = current.messages[-1].content
                 break
 
-            if result.state.status == AgentStatus.ERROR:
+            if current.status == AgentStatus.ERROR:
                 raise ReasoningError("Agent run terminated with ERROR status.")
 
-            current = result.state.model_copy(update={"turn": result.state.turn + 1})
-
-        if output is None:
-            raise ReasoningError("Run completed but no assistant response was produced.")
-
+        assert output is not None
         return RunResult(
             output=output,
             turns=current.turn,
@@ -87,4 +83,5 @@ class RunService:
                 input_tokens=billed_input_tokens, output_tokens=billed_output_tokens
             ),
             context_usage=last_usage,
+            messages=current.messages,
         )

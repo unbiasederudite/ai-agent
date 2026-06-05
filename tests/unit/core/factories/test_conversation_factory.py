@@ -22,8 +22,8 @@ from ai_agent.core.models.llm import (
     LLMUsage,
 )
 from ai_agent.core.models.message import Message, Role
-from ai_agent.core.models.strategy import StrategyConfig
-from ai_agent.core.models.tool import Tool, ToolConfig, ToolResponse, ToolSchema
+from ai_agent.core.models.strategy import ReActStrategyConfig
+from ai_agent.core.models.tool import Tool, BaseToolConfig, ToolResponse, ToolSchema
 from ai_agent.core.protocols.llm import ILLMProvider
 from ai_agent.core.strategies.base import BaseStrategy
 from ai_agent.core.tools.base import BaseTool
@@ -97,7 +97,7 @@ def _make_agent_config(name: str = "default") -> object:
         description="Test agent.",
         llm=_LLM,
         settings=_SETTINGS,
-        strategy=StrategyConfig(type="stub"),
+        strategy=ReActStrategyConfig(),
         tools=[],
     )
 
@@ -110,7 +110,7 @@ def _factory(
     return ConversationFactory(
         llm_implementations=providers or {_PROVIDER: _StubProvider()},  # type: ignore[arg-type]
         tool_implementations=tools or {},
-        strategy_implementations=strategies or {"stub": _StubStrategy},
+        strategy_implementations=strategies or {"react": _StubStrategy},
     )
 
 
@@ -142,7 +142,7 @@ class TestConversationFactoryBuild:
 
     def test_unknown_tool_type_raises_config_error(self) -> None:
         config = _make_config(
-            tool_registry=[ToolConfig(type="unknown", name="x")],
+            tool_registry=[BaseToolConfig(type="unknown", name="x")],
         )
         with pytest.raises(ConfigError, match="unknown"):
             _factory().build(config)
@@ -159,7 +159,7 @@ class TestConversationFactoryBuild:
 
     def test_tool_registered_when_present_in_config(self) -> None:
         config = _make_config(
-            tool_registry=[ToolConfig(type="stub_tool", name="calc")],
+            tool_registry=[BaseToolConfig(type="stub_tool", name="calc")],
             agent_registry=[_make_agent_config()],
         )
         factory = _factory(tools={"stub_tool": _StubTool})

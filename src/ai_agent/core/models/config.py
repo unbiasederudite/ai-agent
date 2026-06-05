@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ai_agent.core.models.agent import AgentConfig
 from ai_agent.core.models.llm import LLM, LLMSettings
-from ai_agent.core.models.tool import ToolConfig
+from ai_agent.core.models.tool import BaseToolConfig
 
 
 class LLMConfig(BaseModel):
@@ -71,7 +71,7 @@ class ConversationConfig(BaseModel):
     default_agent: str = Field(
         description="Name of the active agent at conversation start. Must be present in agent_registry.",
     )
-    tool_registry: list[ToolConfig] = Field(
+    tool_registry: list[BaseToolConfig] = Field(
         default_factory=list,
         description="Tool configurations exposed to the LLM. Empty list means no tools.",
     )

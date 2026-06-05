@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Final
 
 from ai_agent.core.models.llm import LLMSettings
-from ai_agent.core.models.message import Message, Role
+from ai_agent.core.models.message import Message, Role, prepend_system, strip_system
 from ai_agent.core.models.run import RunResult, RunSettings
 from ai_agent.core.models.tool import ToolDefinition
 from ai_agent.core.protocols.llm import ILLMProvider
@@ -54,6 +54,15 @@ class Agent:
         settings: LLMSettings,
         tools: list[ToolDefinition] | None,
     ) -> RunResult:
+        had_system = bool(messages and messages[0].role == Role.SYSTEM)
+        original_system = messages[0] if had_system else None
+
+        full = prepend_system(messages, self._system_prompt) if self._system_prompt else messages
+        result = self._run_service.run(full, provider, model, settings, tools)
+
         if self._system_prompt:
-            messages = [Message(role=Role.SYSTEM, content=self._system_prompt), *messages]
-        return self._run_service.run(messages, provider, model, settings, tools)
+            tail = strip_system(result.messages)
+            stripped = [original_system, *tail] if original_system else tail
+            result = result.model_copy(update={"messages": stripped})
+
+        return result

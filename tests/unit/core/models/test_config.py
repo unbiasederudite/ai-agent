@@ -12,8 +12,8 @@ from ai_agent.core.models.config import (
     LoggingConfig,
 )
 from ai_agent.core.models.llm import LLM, LLMSettings
-from ai_agent.core.models.strategy import StrategyConfig
-from ai_agent.core.models.tool import Tool, ToolConfig
+from ai_agent.core.models.strategy import ReActStrategyConfig
+from ai_agent.core.models.tool import BaseToolConfig, Tool
 
 
 class TestLLMConfig:
@@ -65,26 +65,6 @@ class TestLLMConfig:
 
     def test_llm_config_has_no_llm_field(self) -> None:
         assert "llm" not in LLMConfig.model_fields
-
-
-class TestStrategyConfig:
-    """Tests for the StrategyConfig model."""
-
-    def test_strategy_config_defaults(self) -> None:
-        cfg = StrategyConfig(type="default")
-        assert cfg.max_turns >= 1
-
-    def test_strategy_config_is_frozen(self) -> None:
-        cfg = StrategyConfig(type="default")
-        with pytest.raises(Exception):
-            cfg.max_turns = 99  # type: ignore[misc]
-
-    def test_strategy_config_rejects_zero_turns(self) -> None:
-        with pytest.raises(ValidationError):
-            StrategyConfig(type="default", max_turns=0)
-
-    def test_strategy_config_has_no_max_tokens_field(self) -> None:
-        assert "max_tokens" not in StrategyConfig.model_fields
 
 
 class TestCompactionConfig:
@@ -163,7 +143,7 @@ class TestLoggingConfig:
 
 _LLM = LLM(provider="test", model="test-model")
 _SETTINGS = LLMSettings(temperature=0.7, max_tokens=4096)
-_STRATEGY = StrategyConfig(type="cot")
+_STRATEGY = ReActStrategyConfig()
 
 
 class TestAgentConfig:
@@ -250,7 +230,7 @@ class TestConversationConfig:
             description="Test agent.",
             llm=LLM(provider="test", model="test-model"),
             settings=LLMSettings(temperature=0.7, max_tokens=4096),
-            strategy=StrategyConfig(type="cot"),
+            strategy=ReActStrategyConfig(),
             tools=[],
         )
 
@@ -297,7 +277,7 @@ class TestConversationConfig:
         assert cfg.tool_registry == []
 
     def test_conversation_config_tool_registry_can_be_set(self) -> None:
-        tool = ToolConfig(type="test", name="calc")
+        tool = BaseToolConfig(type="test", name="calc")
         cfg = self._make(tool_registry=[tool])
         assert cfg.tool_registry[0].name == "calc"
 
@@ -317,7 +297,7 @@ class TestConversationConfig:
                     description="Test agent.",
                     llm=LLM(provider="test", model="a"),
                     settings=LLMSettings(temperature=0.7, max_tokens=4096),
-                    strategy=StrategyConfig(type="cot"),
+                    strategy=ReActStrategyConfig(),
                     tools=[],
                 )
             ],
@@ -369,7 +349,7 @@ class TestConversationConfig:
                         description="Test agent.",
                         llm=LLM(provider="unknown", model="unknown-model"),
                         settings=LLMSettings(temperature=0.7, max_tokens=4096),
-                        strategy=StrategyConfig(type="cot"),
+                        strategy=ReActStrategyConfig(),
                         tools=[],
                     )
                 ]
@@ -378,14 +358,14 @@ class TestConversationConfig:
     def test_agent_tool_not_registered_raises(self) -> None:
         with pytest.raises(ValidationError):
             self._make(
-                tool_registry=[ToolConfig(type="stub", name="known")],
+                tool_registry=[BaseToolConfig(type="stub", name="known")],
                 agent_registry=[
                     AgentConfig(
                         name="default",
                         description="Test agent.",
                         llm=LLM(provider="test", model="test-model"),
                         settings=LLMSettings(temperature=0.7, max_tokens=4096),
-                        strategy=StrategyConfig(type="cot"),
+                        strategy=ReActStrategyConfig(),
                         tools=[Tool(type="stub", name="unknown-tool")],
                     )
                 ],
@@ -397,14 +377,14 @@ class TestConversationConfig:
 
     def test_agent_tools_subset_validated_against_registry(self) -> None:
         cfg = self._make(
-            tool_registry=[ToolConfig(type="stub", name="calc")],
+            tool_registry=[BaseToolConfig(type="stub", name="calc")],
             agent_registry=[
                 AgentConfig(
                     name="default",
                     description="Test agent.",
                     llm=LLM(provider="test", model="test-model"),
                     settings=LLMSettings(temperature=0.7, max_tokens=4096),
-                    strategy=StrategyConfig(type="cot"),
+                    strategy=ReActStrategyConfig(),
                     tools=[Tool(type="stub", name="calc")],
                 )
             ],

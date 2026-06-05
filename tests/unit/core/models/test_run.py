@@ -26,6 +26,7 @@ def _make_run_result(**overrides: object) -> RunResult:
         "turns": 1,
         "billed_usage": _usage(),
         "context_usage": _usage(),
+        "messages": [],
     }
     return RunResult(**{**defaults, **overrides})  # type: ignore[arg-type]
 

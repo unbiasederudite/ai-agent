@@ -23,13 +23,13 @@ class Tool(BaseModel):
     name: str = Field(description="Tool name.")
 
 
-class ToolConfig(Tool):
+class BaseToolConfig(Tool):
     """Base settings for all tool types.
 
     Concrete settings subclass this with a Literal 'type' field and add their own fields.
-    When multiple types exist, replace this class with a discriminated union:
+    When multiple types exist, add a typed union alias:
 
-        ToolConfig = Annotated[Union[FooSettings, BarSettings], Field(discriminator="type")]
+        ToolConfig = Annotated[Union[FooToolConfig, BarToolConfig], Field(discriminator="type")]
     """
 
 

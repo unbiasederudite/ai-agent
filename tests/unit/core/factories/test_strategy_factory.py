@@ -6,7 +6,7 @@ from ai_agent.core.exceptions import ConfigError
 from ai_agent.core.factories.strategy import StrategyFactory
 from ai_agent.core.models.agent import AgentState, StepResult
 from ai_agent.core.models.llm import LLMRequest
-from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.strategy import BaseStrategyConfig
 from ai_agent.core.protocols.llm import ILLMProvider
 from ai_agent.core.registries.tool import ToolRegistry
 from ai_agent.core.services.tool import ToolService
@@ -17,8 +17,8 @@ from ai_agent.core.strategies.base import BaseStrategy
 # Shared fixtures
 # ---------------------------------------------------------------------------
 
-_CONFIG_A = StrategyConfig(type="alpha", max_turns=5)
-_CONFIG_B = StrategyConfig(type="beta", max_turns=10)
+_CONFIG_A = BaseStrategyConfig(type="alpha", max_turns=5)
+_CONFIG_B = BaseStrategyConfig(type="beta", max_turns=10)
 
 
 def _tool_service() -> ToolService:

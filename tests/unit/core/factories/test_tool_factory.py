@@ -4,13 +4,13 @@ import pytest
 
 from ai_agent.core.exceptions import ConfigError
 from ai_agent.core.factories.tool import ToolFactory
-from ai_agent.core.models.tool import ToolConfig, ToolResponse, ToolSchema
+from ai_agent.core.models.tool import BaseToolConfig, ToolResponse, ToolSchema
 from ai_agent.core.protocols.tool import ITool
 from ai_agent.core.tools.base import BaseTool
 
 
-_CONFIG_A = ToolConfig(type="alpha", name="tool-a")
-_CONFIG_B = ToolConfig(type="beta", name="tool-b")
+_CONFIG_A = BaseToolConfig(type="alpha", name="tool-a")
+_CONFIG_B = BaseToolConfig(type="beta", name="tool-b")
 
 _SCHEMA = ToolSchema(description="stub", parameters={"type": "object", "properties": {}})
 

@@ -16,8 +16,14 @@ def _usage() -> LLMUsage:
     return LLMUsage(input_tokens=5, output_tokens=3)
 
 
-def _run_result(output: str = "reply") -> RunResult:
-    return RunResult(output=output, turns=1, billed_usage=_usage(), context_usage=_usage())
+def _run_result(output: str = "reply", messages: list[Message] | None = None) -> RunResult:
+    return RunResult(
+        output=output,
+        turns=1,
+        billed_usage=_usage(),
+        context_usage=_usage(),
+        messages=messages or [],
+    )
 
 
 class _StubRunService:
@@ -140,6 +146,88 @@ class TestAgentRun:
         agent.run(self._messages(), provider=None, model="m", settings=_SETTINGS, tools=None)
         assert len(svc.calls[0]) == 1
         assert svc.calls[0][0].role == Role.USER
+
+    def test_leading_system_message_merged_not_doubled(self) -> None:
+        svc = _StubRunService()
+        agent = _make_agent(system_prompt="agent identity", run_service=svc)
+        messages = [
+            Message(role=Role.SYSTEM, content="compaction summary"),
+            Message(role=Role.USER, content="hello"),
+        ]
+        agent.run(messages, provider=None, model="m", settings=_SETTINGS, tools=None)
+        assert svc.calls[0][0].role == Role.SYSTEM
+        assert svc.calls[0][1].role == Role.USER
+
+    def test_leading_system_message_content_contains_both(self) -> None:
+        svc = _StubRunService()
+        agent = _make_agent(system_prompt="agent identity", run_service=svc)
+        messages = [
+            Message(role=Role.SYSTEM, content="compaction summary"),
+            Message(role=Role.USER, content="hello"),
+        ]
+        agent.run(messages, provider=None, model="m", settings=_SETTINGS, tools=None)
+        assert svc.calls[0][0].content == "agent identity\n\ncompaction summary"
+
+    def test_leading_system_message_count_unchanged(self) -> None:
+        svc = _StubRunService()
+        agent = _make_agent(system_prompt="agent identity", run_service=svc)
+        messages = [
+            Message(role=Role.SYSTEM, content="compaction summary"),
+            Message(role=Role.USER, content="hello"),
+        ]
+        agent.run(messages, provider=None, model="m", settings=_SETTINGS, tools=None)
+        assert len(svc.calls[0]) == 2
+
+    def test_agent_system_stripped_from_result_messages(self) -> None:
+        full_trace = [
+            Message(role=Role.SYSTEM, content="identity"),
+            Message(role=Role.USER, content="hello"),
+            Message(role=Role.ASSISTANT, content="reply"),
+        ]
+        svc = _StubRunService(result=_run_result(messages=full_trace))
+        agent = _make_agent(system_prompt="identity", run_service=svc)
+        result = agent.run(
+            [Message(role=Role.USER, content="hello")],
+            provider=None,
+            model="m",
+            settings=_SETTINGS,
+            tools=None,
+        )
+        assert result.messages[0].role == Role.USER
+
+    def test_compaction_system_restored_in_result_messages(self) -> None:
+        compaction_summary = Message(role=Role.SYSTEM, content="summary")
+        full_trace = [
+            Message(role=Role.SYSTEM, content="identity\n\nsummary"),
+            Message(role=Role.USER, content="hello"),
+            Message(role=Role.ASSISTANT, content="reply"),
+        ]
+        svc = _StubRunService(result=_run_result(messages=full_trace))
+        agent = _make_agent(system_prompt="identity", run_service=svc)
+        result = agent.run(
+            [compaction_summary, Message(role=Role.USER, content="hello")],
+            provider=None,
+            model="m",
+            settings=_SETTINGS,
+            tools=None,
+        )
+        assert result.messages[0] == compaction_summary
+
+    def test_result_messages_unchanged_when_no_system_prompt(self) -> None:
+        trace = [
+            Message(role=Role.USER, content="hello"),
+            Message(role=Role.ASSISTANT, content="reply"),
+        ]
+        svc = _StubRunService(result=_run_result(messages=trace))
+        agent = _make_agent(base_prompt="", system_prompt=None, run_service=svc)
+        result = agent.run(
+            [Message(role=Role.USER, content="hello")],
+            provider=None,
+            model="m",
+            settings=_SETTINGS,
+            tools=None,
+        )
+        assert result.messages == trace
 
     def test_returns_service_run_result(self) -> None:
         expected = _run_result(output="pong")

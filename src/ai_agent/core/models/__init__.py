@@ -12,7 +12,12 @@ from ai_agent.core.models.llm import (
 )
 from ai_agent.core.models.message import Message, Role
 from ai_agent.core.models.agent import AgentConfig, AgentState, AgentStatus, StepResult
-from ai_agent.core.models.strategy import Strategy, StrategyConfig
+from ai_agent.core.models.strategy import (
+    BaseStrategyConfig,
+    ReActStrategyConfig,
+    Strategy,
+    StrategyConfig,
+)
 from ai_agent.core.models.tool import (
     Tool,
     ToolCall,
@@ -21,7 +26,7 @@ from ai_agent.core.models.tool import (
     ToolResponse,
     ToolResult,
     ToolSchema,
-    ToolConfig,
+    BaseToolConfig,
 )
 from ai_agent.core.models.run import RunResult, RunSettings
 
@@ -42,6 +47,8 @@ __all__ = [
     "RunResult",
     "RunSettings",
     "StepResult",
+    "BaseStrategyConfig",
+    "ReActStrategyConfig",
     "Strategy",
     "StrategyConfig",
     "Tool",
@@ -51,5 +58,5 @@ __all__ = [
     "ToolResponse",
     "ToolResult",
     "ToolSchema",
-    "ToolConfig",
+    "BaseToolConfig",
 ]

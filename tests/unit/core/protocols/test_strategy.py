@@ -3,14 +3,14 @@
 from ai_agent.core.models.llm import FinishReason, LLMRequest, LLMResponse, LLMSettings, LLMUsage
 from ai_agent.core.models.message import Message, Role
 from ai_agent.core.models.agent import AgentState, AgentStatus, StepResult
-from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.strategy import BaseStrategyConfig
 from ai_agent.core.protocols import ILLMProvider, IReasoningStrategy
 from ai_agent.core.registries.tool import ToolRegistry
 from ai_agent.core.services.tool import ToolService
 from ai_agent.core.strategies.base import BaseStrategy
 
 
-_CONFIG = StrategyConfig(type="stub")
+_CONFIG = BaseStrategyConfig(type="stub")
 
 
 def _tool_service() -> ToolService:
@@ -70,7 +70,7 @@ class TestIReasoningStrategy:
         assert isinstance(result.response, LLMResponse)
 
     def test_config_is_strategy_config(self) -> None:
-        assert isinstance(_stub().config, StrategyConfig)
+        assert isinstance(_stub().config, BaseStrategyConfig)
 
     def test_config_is_the_injected_instance(self) -> None:
         assert _stub().config is _CONFIG
@@ -78,7 +78,7 @@ class TestIReasoningStrategy:
     def test_class_missing_step_fails_isinstance(self) -> None:
         class _NoStep:
             @property
-            def config(self) -> StrategyConfig:
+            def config(self) -> BaseStrategyConfig:
                 return _CONFIG
 
         assert not isinstance(_NoStep(), IReasoningStrategy)

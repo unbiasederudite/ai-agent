@@ -13,8 +13,8 @@ Shared Pydantic data models used across all layers. All models are frozen (immut
   - `LoggingConfig` — minimum log level.
   - `ConversationConfig` — global configuration: LLM registry, agent registry, tool registry, compaction, logging, and message character limit. Cross-validates all registry references at load time.
 - `agent.py` — agent configuration and execution state types: `AgentConfig`, `AgentStatus`, `AgentState`, `StepResult`.
-- `strategy.py` — strategy identity and configuration: `StrategyConfig`.
+- `strategy.py` — strategy identity and configuration models, plus the typed union alias used as the concrete config type.
 - `llm.py` — LLM request/response types: `LLM`, `LLMSettings`, `LLMRequest`, `LLMResponse`, `LLMUsage`, `CompactionResult`, `FinishReason`.
-- `message.py` — conversation message types: `Role`, `Message`.
+- `message.py` — conversation message types: `Role`, `Message`; system-message helpers: `strip_system`, `prepend_system`, `append_system`.
 - `run.py` — run-level types: `RunSettings`, `RunResult`.
-- `tool.py` — tool invocation types: `Tool`, `ToolConfig`, `ToolSchema`, `ToolDefinition`, `ToolContext`, `ToolCall`, `ToolResponse`, `ToolResult`.
+- `tool.py` — tool identity, schema, invocation, and result models; base config for tool implementations.

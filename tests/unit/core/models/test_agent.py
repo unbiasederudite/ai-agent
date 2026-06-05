@@ -6,13 +6,13 @@ from pydantic import ValidationError
 from ai_agent.core.models.agent import AgentConfig, AgentState, AgentStatus, StepResult
 from ai_agent.core.models.llm import FinishReason, LLM, LLMResponse, LLMSettings, LLMUsage
 from ai_agent.core.models.message import Message, Role
-from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.strategy import ReActStrategyConfig
 from ai_agent.core.models.tool import Tool, ToolCall
 
 
 _LLM = LLM(provider="test", model="test-model")
 _SETTINGS = LLMSettings(temperature=0.7, max_tokens=4096)
-_STRATEGY = StrategyConfig(type="cot")
+_STRATEGY = ReActStrategyConfig()
 
 
 def _make_agent_config(**overrides: object) -> AgentConfig:

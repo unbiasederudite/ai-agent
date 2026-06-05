@@ -4,7 +4,7 @@ from typing import Protocol, runtime_checkable
 
 from ai_agent.core.models.llm import LLMRequest
 from ai_agent.core.models.agent import AgentState, StepResult
-from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.strategy import BaseStrategyConfig
 from ai_agent.core.protocols.llm import ILLMProvider
 
 
@@ -13,7 +13,7 @@ class IReasoningStrategy(Protocol):
     """Interface that every reasoning strategy must satisfy."""
 
     @property
-    def config(self) -> StrategyConfig: ...
+    def config(self) -> BaseStrategyConfig: ...
 
     def step(
         self,

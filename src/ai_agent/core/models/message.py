@@ -36,3 +36,34 @@ class Message(BaseModel):
         default=None,
         description="Tool invocations issued by the assistant.",
     )
+
+
+def strip_system(messages: list[Message]) -> list[Message]:
+    """Remove a leading SYSTEM message if present."""
+    if messages and messages[0].role == Role.SYSTEM:
+        return list(messages[1:])
+    return list(messages)
+
+
+def prepend_system(messages: list[Message], content: str) -> list[Message]:
+    """Merge content before any existing SYSTEM message, or create one.
+
+    Used by Agent to inject identity before a compaction summary.
+    """
+    if messages and messages[0].role == Role.SYSTEM:
+        existing = messages[0].content or ""
+        merged = f"{content}\n\n{existing}" if existing else content
+        return [messages[0].model_copy(update={"content": merged}), *messages[1:]]
+    return [Message(role=Role.SYSTEM, content=content), *messages]
+
+
+def append_system(messages: list[Message], content: str) -> list[Message]:
+    """Merge content after any existing SYSTEM message, or create one.
+
+    Used by strategies to append reasoning instructions after agent identity.
+    """
+    if messages and messages[0].role == Role.SYSTEM:
+        existing = messages[0].content or ""
+        merged = f"{existing}\n\n{content}" if existing else content
+        return [messages[0].model_copy(update={"content": merged}), *messages[1:]]
+    return [Message(role=Role.SYSTEM, content=content), *messages]

@@ -114,8 +114,7 @@ class Conversation:
                 tools=tools,
             )
 
-        self._messages.append(Message(role=Role.USER, content=user_message))
-        self._messages.append(Message(role=Role.ASSISTANT, content=result.output))
+        self._messages = list(result.messages)
         self._context_budget = self._context_budget.update(result.context_usage)
         self._billed_usage = LLMUsage(
             input_tokens=self._billed_usage.input_tokens + result.billed_usage.input_tokens,

@@ -3,7 +3,7 @@
 from ai_agent.core.factories.agent import AgentFactory
 from ai_agent.core.models.agent import AgentConfig, AgentState, StepResult
 from ai_agent.core.models.llm import LLM, LLMRequest, LLMSettings
-from ai_agent.core.models.strategy import StrategyConfig
+from ai_agent.core.models.strategy import ReActStrategyConfig, BaseStrategyConfig
 from ai_agent.core.models.tool import Tool
 from ai_agent.core.protocols.llm import ILLMProvider
 from ai_agent.core.registries.tool import ToolRegistry
@@ -14,7 +14,7 @@ from ai_agent.core.strategies.base import BaseStrategy
 
 _LLM = LLM(provider="test", model="test-model")
 _SETTINGS = LLMSettings(temperature=0.7, max_tokens=4096)
-_STRATEGY_CFG = StrategyConfig(type="stub")
+_STRATEGY_CFG = ReActStrategyConfig()
 _TOOL = Tool(type="stub", name="calc")
 
 
@@ -26,7 +26,7 @@ class _StubStrategy(BaseStrategy):
 class _StubStrategyFactory:
     """Always returns a _StubStrategy regardless of config."""
 
-    def build(self, config: StrategyConfig) -> _StubStrategy:
+    def build(self, config: BaseStrategyConfig) -> _StubStrategy:
         return _StubStrategy(config, ToolService(registry=ToolRegistry()))
 
 
